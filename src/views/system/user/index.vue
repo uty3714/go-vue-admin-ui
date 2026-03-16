@@ -1,3 +1,198 @@
+<template>
+  <div class="main">
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="font-medium">用户管理</span>
+        </div>
+      </template>
+
+      <!-- 搜索区域 -->
+      <el-form :inline="true" class="search-form">
+        <el-form-item label="关键词">
+          <el-input
+            v-model="keyword"
+            placeholder="用户名/昵称/手机号"
+            clearable
+            style="width: 200px"
+            @keyup.enter="handleSearch"
+          />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select
+            v-model="status"
+            placeholder="全部"
+            clearable
+            style="width: 120px"
+          >
+            <el-option label="启用" :value="1" />
+            <el-option label="禁用" :value="2" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button
+            type="primary"
+            :icon="useRenderIcon(Search)"
+            @click="handleSearch"
+          >
+            搜索
+          </el-button>
+          <el-button :icon="useRenderIcon(Refresh)" @click="handleReset">
+            重置
+          </el-button>
+        </el-form-item>
+        <el-form-item class="add-button-item">
+          <el-button
+            type="primary"
+            :icon="useRenderIcon(AddFill)"
+            @click="handleAdd"
+          >
+            新增用户
+          </el-button>
+        </el-form-item>
+      </el-form>
+
+      <!-- 表格 -->
+      <el-table
+        v-loading="loading"
+        :data="dataList"
+        border
+        stripe
+        highlight-current-row
+      >
+        <el-table-column
+          v-for="col in columns"
+          :key="col.prop"
+          :prop="col.prop"
+          :label="col.label"
+          :width="col.width"
+          :min-width="col.minWidth"
+          :fixed="col.fixed"
+        >
+          <template #default="{ row }">
+            <template v-if="col.slot === 'role'">
+              {{ row.role?.roleName || "-" }}
+            </template>
+            <template v-else-if="col.slot === 'status'">
+              <el-tag :type="row.status === 1 ? 'success' : 'danger'">
+                {{ row.status === 1 ? "启用" : "禁用" }}
+              </el-tag>
+            </template>
+            <template v-else-if="col.slot === 'operation'">
+              <el-button
+                v-if="row.username !== 'admin'"
+                link
+                type="primary"
+                :icon="useRenderIcon(EditPen)"
+                @click="handleEdit(row)"
+              >
+                编辑
+              </el-button>
+              <el-button
+                link
+                type="warning"
+                :icon="useRenderIcon(Key)"
+                @click="handleResetPassword(row)"
+              >
+                重置密码
+              </el-button>
+              <el-button
+                v-if="row.username !== 'admin'"
+                link
+                type="danger"
+                :icon="useRenderIcon(Delete)"
+                @click="handleDelete(row)"
+              >
+                删除
+              </el-button>
+            </template>
+            <template v-else>
+              {{ row[col.prop] || "-" }}
+            </template>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
+
+      <!-- 弹窗表单 -->
+      <el-dialog
+        v-model="dialogVisible"
+        :title="dialogTitle"
+        width="600px"
+        destroy-on-close
+      >
+        <el-form
+          ref="formRef"
+          :model="formData"
+          :rules="rules"
+          label-width="80px"
+        >
+          <el-form-item label="用户名" prop="username">
+            <el-input
+              v-model="formData.username"
+              placeholder="请输入用户名"
+              :disabled="!!formData.id"
+            />
+          </el-form-item>
+          <el-form-item label="密码" prop="password" :required="!formData.id">
+            <el-input
+              v-model="formData.password"
+              type="password"
+              placeholder="请输入密码"
+              show-password
+            />
+          </el-form-item>
+          <el-form-item label="昵称">
+            <el-input v-model="formData.nickname" placeholder="请输入昵称" />
+          </el-form-item>
+          <el-form-item label="角色" prop="roleId">
+            <el-select
+              v-model="formData.roleId"
+              placeholder="请选择角色"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="role in roleList"
+                :key="role.id"
+                :label="role.roleName"
+                :value="role.id"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="手机号">
+            <el-input v-model="formData.phone" placeholder="请输入手机号" />
+          </el-form-item>
+          <el-form-item label="邮箱">
+            <el-input v-model="formData.email" placeholder="请输入邮箱" />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-radio-group v-model="formData.status">
+              <el-radio :value="1">启用</el-radio>
+              <el-radio :value="2">禁用</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSubmit">确定</el-button>
+        </template>
+      </el-dialog>
+    </el-card>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { ref, reactive, onMounted } from "vue";
 import { message } from "@/utils/message";
@@ -231,206 +426,17 @@ onMounted(() => {
 });
 </script>
 
-<template>
-  <div class="main">
-    <el-card shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="font-medium">用户管理</span>
-        </div>
-      </template>
-
-      <!-- 搜索区域 -->
-      <el-form :inline="true" class="search-form">
-        <el-form-item label="关键词">
-          <el-input
-            v-model="keyword"
-            placeholder="用户名/昵称/手机号"
-            clearable
-            style="width: 200px"
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select
-            v-model="status"
-            placeholder="全部"
-            clearable
-            style="width: 120px"
-          >
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="2" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button
-            type="primary"
-            :icon="useRenderIcon(Search)"
-            @click="handleSearch"
-          >
-            搜索
-          </el-button>
-          <el-button :icon="useRenderIcon(Refresh)" @click="handleReset">
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
-
-      <!-- 操作按钮 -->
-      <div class="mb-4">
-        <el-button
-          type="primary"
-          :icon="useRenderIcon(AddFill)"
-          @click="handleAdd"
-        >
-          新增用户
-        </el-button>
-      </div>
-
-      <!-- 表格 -->
-      <el-table
-        v-loading="loading"
-        :data="dataList"
-        border
-        stripe
-        highlight-current-row
-      >
-        <el-table-column
-          v-for="col in columns"
-          :key="col.prop"
-          :prop="col.prop"
-          :label="col.label"
-          :width="col.width"
-          :min-width="col.minWidth"
-          :fixed="col.fixed"
-        >
-          <template #default="{ row }">
-            <template v-if="col.slot === 'role'">
-              {{ row.role?.roleName || "-" }}
-            </template>
-            <template v-else-if="col.slot === 'status'">
-              <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-                {{ row.status === 1 ? "启用" : "禁用" }}
-              </el-tag>
-            </template>
-            <template v-else-if="col.slot === 'operation'">
-              <el-button
-                v-if="row.username !== 'admin'"
-                link
-                type="primary"
-                :icon="useRenderIcon(EditPen)"
-                @click="handleEdit(row)"
-              >
-                编辑
-              </el-button>
-              <el-button
-                link
-                type="warning"
-                :icon="useRenderIcon(Key)"
-                @click="handleResetPassword(row)"
-              >
-                重置密码
-              </el-button>
-              <el-button
-                v-if="row.username !== 'admin'"
-                link
-                type="danger"
-                :icon="useRenderIcon(Delete)"
-                @click="handleDelete(row)"
-              >
-                删除
-              </el-button>
-            </template>
-            <template v-else>
-              {{ row[col.prop] || "-" }}
-            </template>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 分页 -->
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
-      </div>
-
-      <!-- 弹窗表单 -->
-      <el-dialog
-        v-model="dialogVisible"
-        :title="dialogTitle"
-        width="600px"
-        destroy-on-close
-      >
-        <el-form
-          ref="formRef"
-          :model="formData"
-          :rules="rules"
-          label-width="80px"
-        >
-          <el-form-item label="用户名" prop="username">
-            <el-input
-              v-model="formData.username"
-              placeholder="请输入用户名"
-              :disabled="!!formData.id"
-            />
-          </el-form-item>
-          <el-form-item label="密码" prop="password" :required="!formData.id">
-            <el-input
-              v-model="formData.password"
-              type="password"
-              placeholder="请输入密码"
-              show-password
-            />
-          </el-form-item>
-          <el-form-item label="昵称">
-            <el-input v-model="formData.nickname" placeholder="请输入昵称" />
-          </el-form-item>
-          <el-form-item label="角色" prop="roleId">
-            <el-select
-              v-model="formData.roleId"
-              placeholder="请选择角色"
-              style="width: 100%"
-            >
-              <el-option
-                v-for="role in roleList"
-                :key="role.id"
-                :label="role.roleName"
-                :value="role.id"
-              />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="手机号">
-            <el-input v-model="formData.phone" placeholder="请输入手机号" />
-          </el-form-item>
-          <el-form-item label="邮箱">
-            <el-input v-model="formData.email" placeholder="请输入邮箱" />
-          </el-form-item>
-          <el-form-item label="状态">
-            <el-radio-group v-model="formData.status">
-              <el-radio :value="1">启用</el-radio>
-              <el-radio :value="2">禁用</el-radio>
-            </el-radio-group>
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit">确定</el-button>
-        </template>
-      </el-dialog>
-    </el-card>
-  </div>
-</template>
-
-<style scoped>
+<style scoped lang="scss">
 .search-form {
   margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  .add-button-item {
+    margin-left: auto;
+    margin-right: 0;
+  }
 }
 
 .pagination-container {

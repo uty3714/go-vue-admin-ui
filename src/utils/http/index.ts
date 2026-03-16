@@ -121,6 +121,19 @@ class PureHttp {
     instance.interceptors.response.use(
       (response: PureHttpResponse) => {
         const $config = response.config;
+        
+        // 处理业务错误码（token过期、无效、缺失）
+        const data = response.data;
+        if (data && typeof data.code === "number") {
+          // 2000: token过期, 2002: token无效, 2003: token缺失
+          if (data.code === 2000 || data.code === 2002 || data.code === 2003) {
+            message(data.message || "登录已过期，请重新登录", { type: "warning" });
+            // 调用登出方法，清除token并跳转到登录页
+            useUserStoreHook().logOut();
+            return Promise.reject(new Error(data.message || "登录已过期"));
+          }
+        }
+        
         // 优先判断post/get等方法是否传入回调，否则执行初始化设置等回调
         if (typeof $config.beforeResponseCallback === "function") {
           $config.beforeResponseCallback(response);
@@ -143,7 +156,8 @@ class PureHttp {
           if (status >= 500) {
             message(`服务器错误 (${status})，请稍后重试`, { type: "error" });
           } else if (status === 401) {
-            // 未授权，清除登录信息并跳转到登录页（在路由守卫中处理）
+            // 未授权，清除登录信息并跳转到登录页
+            useUserStoreHook().logOut();
           } else if (status === 403) {
             message("没有权限访问该资源", { type: "warning" });
           } else if (status === 404) {

@@ -1,232 +1,3 @@
-<script setup lang="ts">
-import { ref, reactive, onMounted, nextTick, computed } from "vue";
-import { message } from "@/utils/message";
-import { useRenderIcon } from "@/components/ReIcon/src/hooks";
-import {
-  getMenuTree,
-  createMenu,
-  updateMenu,
-  deleteMenu,
-  type MenuInfo
-} from "@/api/system";
-import { ElMessageBox, type FormInstance, type FormRules } from "element-plus";
-import AddFill from "~icons/ri/add-circle-line";
-import EditPen from "~icons/ep/edit-pen";
-import Delete from "~icons/ep/delete";
-import Refresh from "~icons/ep/refresh";
-
-defineOptions({ name: "SystemMenu" });
-
-const loading = ref(false);
-const dataList = ref<MenuInfo[]>([]);
-
-const dialogVisible = ref(false);
-const dialogTitle = ref("");
-const formRef = ref<FormInstance>();
-const formData = reactive<Partial<MenuInfo>>({
-  id: undefined,
-  parentId: 0,
-  menuName: "",
-  menuType: 1,
-  icon: "",
-  path: "",
-  component: "",
-  perm: "",
-  sort: 0,
-  status: 1,
-  visible: 1
-});
-
-const menuTypeOptions = [
-  { label: "目录", value: 1 },
-  { label: "菜单", value: 2 },
-  { label: "按钮", value: 3 }
-];
-
-// 可选的上级菜单（只显示目录类型）
-const parentMenuOptions = computed(() => {
-  const options = [{ id: 0, menuName: "顶级菜单" }];
-  const findDirectories = (menus: MenuInfo[]) => {
-    menus.forEach(menu => {
-      if (menu.menuType === 1) {
-        options.push(menu);
-        if (menu.children) {
-          findDirectories(menu.children);
-        }
-      }
-    });
-  };
-  findDirectories(dataList.value);
-  return options;
-});
-
-// 当前选中的上级菜单（用于确保新增时能正确显示）
-const currentParentMenu = ref<MenuInfo | null>(null);
-
-const rules: FormRules = {
-  menuName: [{ required: true, message: "请输入菜单名称", trigger: "blur" }],
-  menuType: [{ required: true, message: "请选择菜单类型", trigger: "change" }],
-  path: [{ required: true, message: "请输入路由路径", trigger: "blur" }],
-  component: [
-    {
-      required: true,
-      message: "请输入组件路径",
-      trigger: "blur",
-      validator: (rule, value, callback) => {
-        if (formData.menuType === 2 && !value) {
-          callback(new Error("菜单类型必须填写组件路径"));
-        } else {
-          callback();
-        }
-      }
-    }
-  ]
-};
-
-const columns = [
-  { label: "菜单名称", prop: "menuName", minWidth: 180, slot: "menuName" },
-  { label: "图标", prop: "icon", width: 80, slot: "icon" },
-  { label: "类型", prop: "menuType", width: 100, slot: "menuType" },
-  { label: "路由路径", prop: "path", minWidth: 150 },
-  { label: "组件路径", prop: "component", minWidth: 200 },
-  { label: "权限标识", prop: "perm", minWidth: 150 },
-  { label: "排序", prop: "sort", width: 80 },
-  { label: "状态", prop: "status", width: 100, slot: "status" },
-  { label: "操作", fixed: "right", width: 220, slot: "operation" }
-];
-
-const fetchData = async () => {
-  loading.value = true;
-  try {
-    const res = await getMenuTree();
-    if (res.code === 200) {
-      dataList.value = res.data;
-    }
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleAdd = (row?: MenuInfo) => {
-  dialogTitle.value = "新增菜单";
-  resetForm();
-  currentParentMenu.value = null;
-  if (row) {
-    // 如果是添加子菜单，设置父级ID，并且默认菜单类型为菜单（不能是目录）
-    formData.parentId = row.id;
-    currentParentMenu.value = row; // 保存当前选中的父菜单，确保能正确显示
-    // 如果父级不是顶级菜单（parentId > 0），则只能是菜单或按钮，不能是目录
-    if (row.parentId && row.parentId > 0) {
-      formData.menuType = 2; // 默认为菜单
-    }
-  }
-  dialogVisible.value = true;
-};
-
-const handleEdit = (row: MenuInfo) => {
-  dialogTitle.value = "编辑菜单";
-  Object.assign(formData, row);
-  dialogVisible.value = true;
-};
-
-const handleDelete = (row: MenuInfo) => {
-  ElMessageBox.confirm(`确定删除菜单 "${row.menuName}" 吗？`, "提示", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning"
-  }).then(async () => {
-    const res = await deleteMenu(row.id);
-    if (res.code === 200) {
-      message("删除成功", { type: "success" });
-      fetchData();
-    } else {
-      message(res.message, { type: "error" });
-    }
-  });
-};
-
-const handleSubmit = async () => {
-  if (!formRef.value) return;
-  await formRef.value.validate(async valid => {
-    if (valid) {
-      // 准备提交的数据
-      const submitData = { ...formData };
-
-      // 目录类型或按钮类型，清空组件路径
-      if (submitData.menuType !== 2) {
-        submitData.component = "";
-      }
-
-      // 确保路径以 / 开头
-      if (submitData.path && !submitData.path.startsWith("/")) {
-        submitData.path = "/" + submitData.path;
-      }
-
-      if (submitData.id) {
-        const res = await updateMenu(submitData);
-        if (res.code === 200) {
-          message("修改成功", { type: "success" });
-          dialogVisible.value = false;
-          fetchData();
-        } else {
-          message(res.message, { type: "error" });
-        }
-      } else {
-        const res = await createMenu(submitData);
-        if (res.code === 200) {
-          message("添加成功", { type: "success" });
-          dialogVisible.value = false;
-          fetchData();
-        } else {
-          message(res.message, { type: "error" });
-        }
-      }
-    }
-  });
-};
-
-const resetForm = () => {
-  formData.id = undefined;
-  formData.parentId = 0;
-  formData.menuName = "";
-  formData.menuType = 1;
-  formData.icon = "";
-  formData.path = "";
-  formData.component = "";
-  formData.perm = "";
-  formData.sort = 0;
-  formData.status = 1;
-  formData.visible = 1;
-  formRef.value?.resetFields();
-};
-
-const handleRefresh = () => {
-  // 清空数据再重新加载，确保刷新效果
-  dataList.value = [];
-  nextTick(() => {
-    fetchData();
-  });
-};
-
-const getMenuTypeLabel = (type: number) => {
-  const map: Record<number, string> = { 1: "目录", 2: "菜单", 3: "按钮" };
-  return map[type] || "未知";
-};
-
-const getMenuTypeTag = (type: number): any => {
-  const map: Record<number, any> = {
-    1: "primary",
-    2: "success",
-    3: "warning"
-  };
-  return map[type] || "";
-};
-
-onMounted(() => {
-  fetchData();
-});
-</script>
-
 <template>
   <div class="main">
     <el-card shadow="never">
@@ -237,7 +8,7 @@ onMounted(() => {
       </template>
 
       <!-- 操作按钮 -->
-      <div class="mb-4">
+      <div class="operation-bar">
         <el-button
           type="primary"
           :icon="useRenderIcon(AddFill)"
@@ -422,14 +193,230 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
-.search-form {
-  margin-bottom: 20px;
-}
+<script setup lang="ts">
+import { ref, reactive, onMounted, nextTick, computed } from "vue";
+import { message } from "@/utils/message";
+import { useRenderIcon } from "@/components/ReIcon/src/hooks";
+import {
+  getMenuTree,
+  createMenu,
+  updateMenu,
+  deleteMenu,
+  type MenuInfo
+} from "@/api/system";
+import { ElMessageBox, type FormInstance, type FormRules } from "element-plus";
+import AddFill from "~icons/ri/add-circle-line";
+import EditPen from "~icons/ep/edit-pen";
+import Delete from "~icons/ep/delete";
+import Refresh from "~icons/ep/refresh";
 
-.pagination-container {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
+defineOptions({ name: "SystemMenu" });
+
+const loading = ref(false);
+const dataList = ref<MenuInfo[]>([]);
+
+const dialogVisible = ref(false);
+const dialogTitle = ref("");
+const formRef = ref<FormInstance>();
+const formData = reactive<Partial<MenuInfo>>({
+  id: undefined,
+  parentId: 0,
+  menuName: "",
+  menuType: 1,
+  icon: "",
+  path: "",
+  component: "",
+  perm: "",
+  sort: 0,
+  status: 1
+});
+
+// 可选的上级菜单（只显示目录类型）
+const parentMenuOptions = computed(() => {
+  const options = [{ id: 0, menuName: "顶级菜单" }];
+  const findDirectories = (menus: MenuInfo[]) => {
+    menus.forEach(menu => {
+      if (menu.menuType === 1) {
+        options.push(menu);
+        if (menu.children) {
+          findDirectories(menu.children);
+        }
+      }
+    });
+  };
+  findDirectories(dataList.value);
+  return options;
+});
+
+// 当前选中的上级菜单（用于确保新增时能正确显示）
+const currentParentMenu = ref<MenuInfo | null>(null);
+
+const rules: FormRules = {
+  menuName: [{ required: true, message: "请输入菜单名称", trigger: "blur" }],
+  menuType: [{ required: true, message: "请选择菜单类型", trigger: "change" }],
+  path: [{ required: true, message: "请输入路由路径", trigger: "blur" }],
+  component: [
+    {
+      required: true,
+      message: "请输入组件路径",
+      trigger: "blur",
+      validator: (rule, value, callback) => {
+        if (formData.menuType === 2 && !value) {
+          callback(new Error("菜单类型必须填写组件路径"));
+        } else {
+          callback();
+        }
+      }
+    }
+  ]
+};
+
+const columns = [
+  { label: "菜单名称", prop: "menuName", minWidth: 180, slot: "menuName" },
+  { label: "图标", prop: "icon", width: 80, slot: "icon" },
+  { label: "类型", prop: "menuType", width: 100, slot: "menuType" },
+  { label: "路由路径", prop: "path", minWidth: 150 },
+  { label: "组件路径", prop: "component", minWidth: 200 },
+  { label: "权限标识", prop: "perm", minWidth: 150 },
+  { label: "排序", prop: "sort", width: 80 },
+  { label: "状态", prop: "status", width: 100, slot: "status" },
+  { label: "操作", fixed: "right", width: 220, slot: "operation" }
+];
+
+const fetchData = async () => {
+  loading.value = true;
+  try {
+    const res = await getMenuTree();
+    if (res.code === 200) {
+      dataList.value = res.data;
+    }
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleAdd = (row?: MenuInfo) => {
+  dialogTitle.value = "新增菜单";
+  resetForm();
+  currentParentMenu.value = null;
+  if (row) {
+    // 如果是添加子菜单，设置父级ID，并且默认菜单类型为菜单（不能是目录）
+    formData.parentId = row.id;
+    currentParentMenu.value = row; // 保存当前选中的父菜单，确保能正确显示
+    // 如果父级不是顶级菜单（parentId > 0），则只能是菜单或按钮，不能是目录
+    if (row.parentId && row.parentId > 0) {
+      formData.menuType = 2; // 默认为菜单
+    }
+  }
+  dialogVisible.value = true;
+};
+
+const handleEdit = (row: MenuInfo) => {
+  dialogTitle.value = "编辑菜单";
+  Object.assign(formData, row);
+  dialogVisible.value = true;
+};
+
+const handleDelete = (row: MenuInfo) => {
+  ElMessageBox.confirm(`确定删除菜单 "${row.menuName}" 吗？`, "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning"
+  }).then(async () => {
+    const res = await deleteMenu(row.id);
+    if (res.code === 200) {
+      message("删除成功", { type: "success" });
+      fetchData();
+    } else {
+      message(res.message, { type: "error" });
+    }
+  });
+};
+
+const handleSubmit = async () => {
+  if (!formRef.value) return;
+  await formRef.value.validate(async valid => {
+    if (valid) {
+      // 准备提交的数据
+      const submitData = { ...formData };
+
+      // 目录类型或按钮类型，清空组件路径
+      if (submitData.menuType !== 2) {
+        submitData.component = "";
+      }
+
+      // 确保路径以 / 开头
+      if (submitData.path && !submitData.path.startsWith("/")) {
+        submitData.path = "/" + submitData.path;
+      }
+
+      if (submitData.id) {
+        const res = await updateMenu(submitData);
+        if (res.code === 200) {
+          message("修改成功", { type: "success" });
+          dialogVisible.value = false;
+          fetchData();
+        } else {
+          message(res.message, { type: "error" });
+        }
+      } else {
+        const res = await createMenu(submitData);
+        if (res.code === 200) {
+          message("添加成功", { type: "success" });
+          dialogVisible.value = false;
+          fetchData();
+        } else {
+          message(res.message, { type: "error" });
+        }
+      }
+    }
+  });
+};
+
+const resetForm = () => {
+  formData.id = undefined;
+  formData.parentId = 0;
+  formData.menuName = "";
+  formData.menuType = 1;
+  formData.icon = "";
+  formData.path = "";
+  formData.component = "";
+  formData.perm = "";
+  formData.sort = 0;
+  formData.status = 1;
+
+  formRef.value?.resetFields();
+};
+
+const handleRefresh = () => {
+  // 清空数据再重新加载，确保刷新效果
+  dataList.value = [];
+  nextTick(() => {
+    fetchData();
+  });
+};
+
+const getMenuTypeLabel = (type: number) => {
+  const map: Record<number, string> = { 1: "目录", 2: "菜单", 3: "按钮" };
+  return map[type] || "未知";
+};
+
+const getMenuTypeTag = (type: number): any => {
+  const map: Record<number, any> = {
+    1: "primary",
+    2: "success",
+    3: "warning"
+  };
+  return map[type] || "";
+};
+
+onMounted(() => {
+  fetchData();
+});
+</script>
+
+<style scoped lang="scss">
+.operation-bar {
+  margin-bottom: 20px;
 }
 </style>

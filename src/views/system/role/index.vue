@@ -1,3 +1,197 @@
+<template>
+  <div class="main">
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="font-medium">角色管理</span>
+        </div>
+      </template>
+
+      <!-- 搜索区域 -->
+      <el-form :inline="true" class="search-form">
+        <el-form-item label="关键词">
+          <el-input
+            v-model="keyword"
+            placeholder="角色名称/角色代码"
+            clearable
+            style="width: 200px"
+            @keyup.enter="handleSearch"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button
+            type="primary"
+            :icon="useRenderIcon(Search)"
+            @click="handleSearch"
+          >
+            搜索
+          </el-button>
+          <el-button :icon="useRenderIcon(Refresh)" @click="handleReset">
+            重置
+          </el-button>
+        </el-form-item>
+        <el-form-item class="add-button-item">
+          <el-button
+            type="primary"
+            :icon="useRenderIcon(AddFill)"
+            @click="handleAdd"
+          >
+            新增角色
+          </el-button>
+        </el-form-item>
+      </el-form>
+
+      <!-- 表格 -->
+      <el-table
+        v-loading="loading"
+        :data="dataList"
+        border
+        stripe
+        highlight-current-row
+      >
+        <el-table-column
+          v-for="col in columns"
+          :key="col.prop"
+          :prop="col.prop"
+          :label="col.label"
+          :width="col.width"
+          :min-width="col.minWidth"
+          :fixed="col.fixed"
+        >
+          <template #default="{ row }">
+            <template v-if="col.slot === 'status'">
+              <el-tag :type="row.status === 1 ? 'success' : 'danger'">
+                {{ row.status === 1 ? "启用" : "禁用" }}
+              </el-tag>
+            </template>
+            <template v-else-if="col.slot === 'operation'">
+              <el-button
+                v-if="row.roleCode !== 'admin'"
+                link
+                type="primary"
+                :icon="useRenderIcon(EditPen)"
+                @click="handleEdit(row)"
+              >
+                编辑
+              </el-button>
+              <el-button
+                v-if="row.roleCode !== 'admin'"
+                link
+                type="success"
+                :icon="useRenderIcon(MenuIcon)"
+                @click="handlePermission(row)"
+              >
+                权限
+              </el-button>
+              <el-button
+                v-if="row.roleCode !== 'admin'"
+                link
+                type="danger"
+                :icon="useRenderIcon(Delete)"
+                @click="handleDelete(row)"
+              >
+                删除
+              </el-button>
+            </template>
+            <template v-else>
+              {{ row[col.prop] || "-" }}
+            </template>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
+
+      <!-- 角色表单弹窗 -->
+      <el-dialog
+        v-model="dialogVisible"
+        :title="dialogTitle"
+        width="600px"
+        destroy-on-close
+      >
+        <el-form
+          ref="formRef"
+          :model="formData"
+          :rules="rules"
+          label-width="100px"
+        >
+          <el-form-item label="角色名称" prop="roleName">
+            <el-input
+              v-model="formData.roleName"
+              placeholder="请输入角色名称"
+            />
+          </el-form-item>
+          <el-form-item label="角色代码" prop="roleCode">
+            <el-input
+              v-model="formData.roleCode"
+              placeholder="请输入角色代码"
+              :disabled="!!formData.id"
+            />
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input
+              v-model="formData.description"
+              type="textarea"
+              :rows="3"
+              placeholder="请输入角色描述"
+            />
+          </el-form-item>
+          <el-form-item label="排序">
+            <el-input-number v-model="formData.sort" :min="0" />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-radio-group v-model="formData.status">
+              <el-radio :value="1">启用</el-radio>
+              <el-radio :value="2">禁用</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSubmit">确定</el-button>
+        </template>
+      </el-dialog>
+
+      <!-- 权限设置弹窗 -->
+      <el-dialog
+        v-model="permDialogVisible"
+        :title="permDialogTitle"
+        width="500px"
+        destroy-on-close
+      >
+        <div class="menu-tree-container">
+          <el-tree
+            ref="menuTreeRef"
+            :data="menuTreeData"
+            :props="defaultProps"
+            :default-checked-keys="checkedMenuIds"
+            node-key="id"
+            show-checkbox
+            default-expand-all
+          />
+        </div>
+        <template #footer>
+          <el-button @click="permDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSavePermission"
+            >确定</el-button
+          >
+        </template>
+      </el-dialog>
+    </el-card>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { ref, reactive, onMounted } from "vue";
 import { message } from "@/utils/message";
@@ -221,205 +415,17 @@ onMounted(() => {
 });
 </script>
 
-<template>
-  <div class="main">
-    <el-card shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="font-medium">角色管理</span>
-        </div>
-      </template>
-
-      <!-- 搜索区域 -->
-      <el-form :inline="true" class="search-form">
-        <el-form-item label="关键词">
-          <el-input
-            v-model="keyword"
-            placeholder="角色名称/角色代码"
-            clearable
-            style="width: 200px"
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button
-            type="primary"
-            :icon="useRenderIcon(Search)"
-            @click="handleSearch"
-          >
-            搜索
-          </el-button>
-          <el-button :icon="useRenderIcon(Refresh)" @click="handleReset">
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
-
-      <!-- 操作按钮 -->
-      <div class="mb-4">
-        <el-button
-          type="primary"
-          :icon="useRenderIcon(AddFill)"
-          @click="handleAdd"
-        >
-          新增角色
-        </el-button>
-      </div>
-
-      <!-- 表格 -->
-      <el-table
-        v-loading="loading"
-        :data="dataList"
-        border
-        stripe
-        highlight-current-row
-      >
-        <el-table-column
-          v-for="col in columns"
-          :key="col.prop"
-          :prop="col.prop"
-          :label="col.label"
-          :width="col.width"
-          :min-width="col.minWidth"
-          :fixed="col.fixed"
-        >
-          <template #default="{ row }">
-            <template v-if="col.slot === 'status'">
-              <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-                {{ row.status === 1 ? "启用" : "禁用" }}
-              </el-tag>
-            </template>
-            <template v-else-if="col.slot === 'operation'">
-              <el-button
-                v-if="row.roleCode !== 'admin'"
-                link
-                type="primary"
-                :icon="useRenderIcon(EditPen)"
-                @click="handleEdit(row)"
-              >
-                编辑
-              </el-button>
-              <el-button
-                v-if="row.roleCode !== 'admin'"
-                link
-                type="success"
-                :icon="useRenderIcon(MenuIcon)"
-                @click="handlePermission(row)"
-              >
-                权限
-              </el-button>
-              <el-button
-                v-if="row.roleCode !== 'admin'"
-                link
-                type="danger"
-                :icon="useRenderIcon(Delete)"
-                @click="handleDelete(row)"
-              >
-                删除
-              </el-button>
-            </template>
-            <template v-else>
-              {{ row[col.prop] || "-" }}
-            </template>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 分页 -->
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
-      </div>
-
-      <!-- 角色表单弹窗 -->
-      <el-dialog
-        v-model="dialogVisible"
-        :title="dialogTitle"
-        width="600px"
-        destroy-on-close
-      >
-        <el-form
-          ref="formRef"
-          :model="formData"
-          :rules="rules"
-          label-width="100px"
-        >
-          <el-form-item label="角色名称" prop="roleName">
-            <el-input
-              v-model="formData.roleName"
-              placeholder="请输入角色名称"
-            />
-          </el-form-item>
-          <el-form-item label="角色代码" prop="roleCode">
-            <el-input
-              v-model="formData.roleCode"
-              placeholder="请输入角色代码"
-              :disabled="!!formData.id"
-            />
-          </el-form-item>
-          <el-form-item label="描述">
-            <el-input
-              v-model="formData.description"
-              type="textarea"
-              :rows="3"
-              placeholder="请输入角色描述"
-            />
-          </el-form-item>
-          <el-form-item label="排序">
-            <el-input-number v-model="formData.sort" :min="0" />
-          </el-form-item>
-          <el-form-item label="状态">
-            <el-radio-group v-model="formData.status">
-              <el-radio :value="1">启用</el-radio>
-              <el-radio :value="2">禁用</el-radio>
-            </el-radio-group>
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit">确定</el-button>
-        </template>
-      </el-dialog>
-
-      <!-- 权限设置弹窗 -->
-      <el-dialog
-        v-model="permDialogVisible"
-        :title="permDialogTitle"
-        width="500px"
-        destroy-on-close
-      >
-        <div class="menu-tree-container">
-          <el-tree
-            ref="menuTreeRef"
-            :data="menuTreeData"
-            :props="defaultProps"
-            :default-checked-keys="checkedMenuIds"
-            node-key="id"
-            show-checkbox
-            default-expand-all
-          />
-        </div>
-        <template #footer>
-          <el-button @click="permDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSavePermission"
-            >确定</el-button
-          >
-        </template>
-      </el-dialog>
-    </el-card>
-  </div>
-</template>
-
-<style scoped>
+<style scoped lang="scss">
 .search-form {
   margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  .add-button-item {
+    margin-left: auto;
+    margin-right: 0;
+  }
 }
 
 .pagination-container {
