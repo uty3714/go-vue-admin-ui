@@ -54,6 +54,14 @@ export const logout = () => {
   return http.request<Result<null>>("post", "/v1/system/logout");
 };
 
+// 刷新token
+export const refreshToken = () => {
+  return http.request<Result<{ token: string; expiresAt: number }>>(
+    "post",
+    "/v1/system/refresh-token"
+  );
+};
+
 // 获取当前用户信息
 export const getUserInfo = () => {
   return http.request<Result<UserInfo>>("get", "/v1/system/user/info");
@@ -87,10 +95,7 @@ export const updateUser = (data: Partial<UserInfo>) => {
 
 // 删除用户
 export const deleteUser = (id: number) => {
-  return http.request<Result<null>>(
-    "delete",
-    `/v1/system/user/delete/${id}`
-  );
+  return http.request<Result<null>>("delete", `/v1/system/user/delete/${id}`);
 };
 
 // ==================== 角色管理 ====================
@@ -116,12 +121,14 @@ export const getRoleList = (params?: {
   });
 };
 
+// 获取角色选项列表（排除超级管理员，用于下拉选择）
+export const getRoleOptions = () => {
+  return http.request<Result<RoleInfo[]>>("get", "/v1/system/role/options");
+};
+
 // 获取角色详情
 export const getRoleDetail = (id: number) => {
-  return http.request<Result<RoleInfo>>(
-    "get",
-    `/v1/system/role/detail/${id}`
-  );
+  return http.request<Result<RoleInfo>>("get", `/v1/system/role/detail/${id}`);
 };
 
 // 创建角色
@@ -140,18 +147,12 @@ export const updateRole = (data: Partial<RoleInfo>) => {
 
 // 删除角色
 export const deleteRole = (id: number) => {
-  return http.request<Result<null>>(
-    "delete",
-    `/v1/system/role/delete/${id}`
-  );
+  return http.request<Result<null>>("delete", `/v1/system/role/delete/${id}`);
 };
 
 // 获取角色菜单权限
 export const getRoleMenus = (id: number) => {
-  return http.request<Result<number[]>>(
-    "get",
-    `/v1/system/role/menus/${id}`
-  );
+  return http.request<Result<number[]>>("get", `/v1/system/role/menus/${id}`);
 };
 
 // 设置角色菜单权限
@@ -205,10 +206,7 @@ export const updateMenu = (data: Partial<MenuInfo>) => {
 
 // 删除菜单
 export const deleteMenu = (id: number) => {
-  return http.request<Result<null>>(
-    "delete",
-    `/v1/system/menu/delete/${id}`
-  );
+  return http.request<Result<null>>("delete", `/v1/system/menu/delete/${id}`);
 };
 
 // 重置用户密码（管理员）
@@ -216,4 +214,114 @@ export const resetUserPassword = (id: number, password: string) => {
   return http.request<Result<null>>("put", `/v1/system/user/update`, {
     data: { id, password }
   });
+};
+
+// 更新当前用户信息（个人中心）
+export const updateCurrentUser = (data: {
+  nickname?: string;
+  avatar?: string;
+  phone?: string;
+  email?: string;
+}) => {
+  return http.request<Result<null>>("put", "/v1/system/user/profile", {
+    data
+  });
+};
+
+// 修改当前用户密码（个人中心）
+export const updateCurrentUserPassword = (data: {
+  oldPassword: string;
+  newPassword: string;
+}) => {
+  return http.request<Result<null>>("put", "/v1/system/user/password", {
+    data
+  });
+};
+
+// ==================== 日志管理 ====================
+export type OperationLogInfo = {
+  id: number;
+  userId: number;
+  username: string;
+  roleName: string;
+  method: string;
+  path: string;
+  requestData: string;
+  responseData: string;
+  status: number; // 1成功 2失败
+  errorMessage: string;
+  ip: string;
+  userAgent: string;
+  operationTime: number;
+  createdAt: string;
+};
+
+export type LoginLogInfo = {
+  id: number;
+  username: string;
+  ip: string;
+  location: string;
+  browser: string;
+  os: string;
+  status: number; // 1成功 2失败
+  message: string;
+  createdAt: string;
+};
+
+// 获取操作日志列表
+export const getOperationLogList = (params?: {
+  page?: number;
+  pageSize?: number;
+  username?: string;
+  status?: number;
+  startTime?: string;
+  endTime?: string;
+}) => {
+  return http.request<PageResult<OperationLogInfo>>(
+    "get",
+    "/v1/system/log/operation/list",
+    { params }
+  );
+};
+
+// 删除操作日志
+export const deleteOperationLog = (id: number) => {
+  return http.request<Result<null>>(
+    "delete",
+    `/v1/system/log/operation/delete/${id}`
+  );
+};
+
+// 清空操作日志
+export const clearOperationLog = () => {
+  return http.request<Result<null>>("delete", "/v1/system/log/operation/clear");
+};
+
+// 获取登录日志列表
+export const getLoginLogList = (params?: {
+  page?: number;
+  pageSize?: number;
+  username?: string;
+  status?: number;
+  startTime?: string;
+  endTime?: string;
+}) => {
+  return http.request<PageResult<LoginLogInfo>>(
+    "get",
+    "/v1/system/log/login/list",
+    { params }
+  );
+};
+
+// 删除登录日志
+export const deleteLoginLog = (id: number) => {
+  return http.request<Result<null>>(
+    "delete",
+    `/v1/system/log/login/delete/${id}`
+  );
+};
+
+// 清空登录日志
+export const clearLoginLog = () => {
+  return http.request<Result<null>>("delete", "/v1/system/log/login/clear");
 };

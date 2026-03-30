@@ -353,7 +353,6 @@ function addAsyncRoutes(arrRoutes: Array<RouteRecordRaw>) {
       if (index !== -1) {
         v.component = modulesRoutes[modulesRoutesKeys[index]];
       } else {
-        console.warn(`[Router] 未找到组件: ${v.component}，请检查文件是否存在`);
         // 使用默认的空组件避免报错
         v.component = () => import("@/views/error/404.vue");
       }

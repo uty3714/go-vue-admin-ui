@@ -105,7 +105,7 @@
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
+          :page-sizes="[20, 50, 100]"
           :total="total"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
@@ -175,7 +175,6 @@
             ref="menuTreeRef"
             :data="menuTreeData"
             :props="defaultProps"
-            :default-checked-keys="checkedMenuIds"
             node-key="id"
             show-checkbox
             default-expand-all
@@ -193,7 +192,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, nextTick } from "vue";
 import { message } from "@/utils/message";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import {
@@ -221,7 +220,7 @@ const loading = ref(false);
 const dataList = ref<RoleInfo[]>([]);
 const total = ref(0);
 const currentPage = ref(1);
-const pageSize = ref(10);
+const pageSize = ref(20);
 const keyword = ref("");
 
 // 角色表单
@@ -307,25 +306,36 @@ const handlePermission = async (row: RoleInfo) => {
 
   // 获取角色已有权限
   const roleMenuRes = await getRoleMenus(row.id);
-  if (roleMenuRes.code === 200) {
-    checkedMenuIds.value = roleMenuRes.data;
-  }
 
   permDialogVisible.value = true;
+
+  // 在 DOM 更新后设置选中的节点
+  // 使用 leafOnly=true，只设置叶子节点选中状态，父节点会根据子节点自动计算
+  if (roleMenuRes.code === 200) {
+    nextTick(() => {
+      menuTreeRef.value?.setCheckedKeys(roleMenuRes.data, true);
+    });
+  }
 };
 
 // 保存权限设置
 const handleSavePermission = async () => {
   if (!menuTreeRef.value) return;
 
-  // 获取所有选中的节点
-  const checkedKeys = menuTreeRef.value.getCheckedKeys();
-  const halfCheckedKeys = menuTreeRef.value.getHalfCheckedKeys();
-  const allCheckedKeys = [...checkedKeys, ...halfCheckedKeys];
+  // 获取所有选中的节点（包括叶子节点和父节点）
+  const checkedKeys = menuTreeRef.value.getCheckedKeys(false);
+
+  // 过滤出叶子节点（没有子节点的菜单）
+  // 只保存叶子节点的权限，父目录的选中状态由子节点决定
+  const leafKeys = checkedKeys.filter((key: number) => {
+    const node = menuTreeRef.value.getNode(key);
+    // 如果是叶子节点（没有子节点或者是按钮类型）则保存
+    return node && (!node.childNodes || node.childNodes.length === 0);
+  });
 
   const res = await setRoleMenus({
     roleId: currentRoleId.value,
-    menuIds: allCheckedKeys
+    menuIds: leafKeys
   });
 
   if (res.code === 200) {
@@ -417,14 +427,14 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .search-form {
-  margin-bottom: 20px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  margin-bottom: 20px;
 
   .add-button-item {
-    margin-left: auto;
     margin-right: 0;
+    margin-left: auto;
   }
 }
 

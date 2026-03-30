@@ -15,9 +15,6 @@ import { usePermissionStoreHook } from "@/store/modules/permission";
 import ExitFullscreen from "~icons/ri/fullscreen-exit-fill";
 import Fullscreen from "~icons/ri/fullscreen-fill";
 
-const errorInfo =
-  "The current routing configuration is incorrect, please check the configuration";
-
 export function useNav() {
   const route = useRoute();
   const pureApp = useAppStoreHook();
@@ -101,7 +98,7 @@ export function useNav() {
   }
 
   function resolvePath(route) {
-    if (!route.children) return console.error(errorInfo);
+    if (!route.children) return;
     const httpReg = /^http(s?):\/\//;
     const routeChildPath = route.children[0]?.path;
     if (httpReg.test(routeChildPath)) {

@@ -300,13 +300,12 @@ const handleAdd = (row?: MenuInfo) => {
   resetForm();
   currentParentMenu.value = null;
   if (row) {
-    // 如果是添加子菜单，设置父级ID，并且默认菜单类型为菜单（不能是目录）
+    // 如果是添加子菜单，设置父级ID
     formData.parentId = row.id;
     currentParentMenu.value = row; // 保存当前选中的父菜单，确保能正确显示
-    // 如果父级不是顶级菜单（parentId > 0），则只能是菜单或按钮，不能是目录
-    if (row.parentId && row.parentId > 0) {
-      formData.menuType = 2; // 默认为菜单
-    }
+    // 在一级目录下新增，默认类型应该是菜单（2），而不是目录（1）
+    // 二级菜单下新增，也只能是菜单或按钮
+    formData.menuType = 2; // 默认为菜单
   }
   dialogVisible.value = true;
 };
@@ -318,6 +317,14 @@ const handleEdit = (row: MenuInfo) => {
 };
 
 const handleDelete = (row: MenuInfo) => {
+  // 检查是否有子菜单
+  if (row.children && row.children.length > 0) {
+    message(`菜单 "${row.menuName}" 下存在子菜单，无法删除`, {
+      type: "warning"
+    });
+    return;
+  }
+
   ElMessageBox.confirm(`确定删除菜单 "${row.menuName}" 吗？`, "提示", {
     confirmButtonText: "确定",
     cancelButtonText: "取消",

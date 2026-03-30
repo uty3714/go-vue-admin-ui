@@ -126,6 +126,7 @@ VITE_PROXY_TARGET = http://localhost:8080
 开发环境使用 Vite 的代理功能，会将 `/api` 开头的请求转发到 `VITE_PROXY_TARGET` 配置的后端地址。
 
 **注意**：
+
 - 修改 `.env.development` 后需要**重启 Vite 开发服务器**才能生效
 - HTTP 请求超时时间为 10 秒，可根据实际情况在 `src/utils/http/index.ts` 中调整
 
@@ -137,8 +138,6 @@ VITE_API_BASE_URL = http://your-backend-domain.com/api
 ```
 
 生产构建默认启用 gzip 压缩，可通过 `VITE_COMPRESSION` 配置调整。
-
-
 
 ### 4. 启动开发服务器
 
@@ -153,6 +152,7 @@ pnpm dev
 打开浏览器访问：`http://localhost:8848`
 
 默认账号：
+
 - 用户名：`admin`
 - 密码：`admin123`
 
@@ -162,8 +162,8 @@ pnpm dev
 
 ### 配套后端仓库
 
-| 仓库 | GitHub | Gitee |
-|------|--------|-------|
+| 仓库                 | GitHub                                                | Gitee                                               |
+| -------------------- | ----------------------------------------------------- | --------------------------------------------------- |
 | **go-vue-admin-api** | [GitHub](https://github.com/Liukers/go-vue-admin-api) | [Gitee](https://gitee.com/liukers/go-vue-admin-api) |
 
 ### 快速启动完整项目
@@ -207,6 +207,7 @@ pnpm dev  # 启动前端 (端口 8848)
 ```
 
 开发时确保：
+
 1. 后端服务已启动（`go run main.go`）
 2. `.env.development` 中的 `VITE_PROXY_TARGET` 指向正确后端地址
 3. 后端 `setting.yaml` 中的 CORS 配置允许前端域名
@@ -215,16 +216,18 @@ pnpm dev  # 启动前端 (端口 8848)
 
 ### 系统管理
 
-| 模块 | 功能 | 说明 |
-|------|------|------|
-| 用户管理 | 增删改查、重置密码 | 系统用户管理 |
-| 角色管理 | 增删改查、权限分配 | RBAC 角色管理 |
-| 菜单管理 | 目录/菜单/按钮管理 | 动态路由配置 |
+| 模块     | 功能               | 说明                      |
+| -------- | ------------------ | ------------------------- |
+| 用户管理 | 增删改查、重置密码 | 系统用户管理              |
+| 角色管理 | 增删改查、权限分配 | RBAC 角色管理             |
+| 菜单管理 | 目录/菜单/按钮管理 | 动态路由配置              |
+| 操作日志 | 查询、删除、清空   | 记录用户操作行为          |
+| 登录日志 | 查询、删除、清空   | 记录登录行为（成功/失败） |
 
 ### 系统功能
 
 - **动态路由**: 根据权限动态生成路由和菜单
-- **权限控制**: 按钮级别权限控制（v-perms 指令）
+- **权限控制**: 按钮级别权限控制（`v-auth` 和 `v-perms` 指令）
 - **主题切换**: 支持亮色/暗色主题
 - **多标签页**: 类似浏览器的多标签页操作
 - **全屏/搜索**: 全屏展示、菜单搜索
@@ -238,12 +241,14 @@ pnpm dev  # 启动前端 (端口 8848)
 **1. 创建 API 文件**
 
 参考 `src/api/system.ts` 创建 API 接口：
+
 - 定义数据类型（TypeScript interface）
 - 使用 `http.request` 封装请求
 
 **2. 创建页面组件**
 
 参考 `src/views/system/user/` 创建页面：
+
 - 使用 `defineOptions` 设置页面名称（用于 keep-alive）
 - 使用 Element Plus 组件构建表单和表格
 - 使用 `v-perms` 指令控制按钮权限
@@ -252,13 +257,13 @@ pnpm dev  # 启动前端 (端口 8848)
 
 登录后端管理系统 → 菜单管理 → 新增：
 
-| 字段 | 示例值 | 说明 |
-|------|--------|------|
-| 菜单名称 | 用户管理 | 显示在导航栏的名称 |
-| 菜单类型 | 目录/菜单/按钮 | 目录包含子菜单，菜单对应页面 |
-| 路由路径 | /system/user | 前端路由地址 |
-| 组件路径 | /system/user/index | 对应 Vue 文件路径 |
-| 权限标识 | system:user:list | 用于按钮级权限控制 |
+| 字段     | 示例值             | 说明                         |
+| -------- | ------------------ | ---------------------------- |
+| 菜单名称 | 用户管理           | 显示在导航栏的名称           |
+| 菜单类型 | 目录/菜单/按钮     | 目录包含子菜单，菜单对应页面 |
+| 路由路径 | /system/user       | 前端路由地址                 |
+| 组件路径 | /system/user/index | 对应 Vue 文件路径            |
+| 权限标识 | system:user:list   | 用于按钮级权限控制           |
 
 **4. 分配权限**
 
@@ -266,18 +271,28 @@ pnpm dev  # 启动前端 (端口 8848)
 
 ### 菜单类型说明
 
-| 类型 | 说明 | 示例 |
-|------|------|------|
-| **目录** | 左侧导航栏分组，包含子菜单 | 系统管理 |
-| **菜单** | 实际页面，点击后跳转 | 用户管理 |
+| 类型     | 说明                                    | 示例             |
+| -------- | --------------------------------------- | ---------------- |
+| **目录** | 左侧导航栏分组，包含子菜单              | 系统管理         |
+| **菜单** | 实际页面，点击后跳转                    | 用户管理         |
 | **按钮** | 页面内操作权限，配合 `v-perms` 指令使用 | 新增、编辑、删除 |
 
 **按钮权限使用示例：**
+
+系统提供两种权限指令：
+
+| 指令      | 作用             | 示例                               |
+| --------- | ---------------- | ---------------------------------- |
+| `v-auth`  | 基于用户权限标识 | `v-auth="['system:user:create']"`  |
+| `v-perms` | 基于角色权限码   | `v-perms="['system:user:create']"` |
+
 ```vue
-<el-button v-perms="['system:user:create']">新增用户</el-button>
-<el-button v-perms="['system:user:update']">编辑</el-button>
-<el-button v-perms="['system:user:delete']">删除</el-button>
+<el-button v-auth="['system:user:create']">新增用户</el-button>
+<el-button v-auth="['system:user:update']">编辑</el-button>
+<el-button v-auth="['system:user:delete']">删除</el-button>
 ```
+
+> **说明**：`v-auth` 和 `v-perms` 功能相同，可根据项目规范选择使用。
 
 ### 常用组件
 
@@ -358,30 +373,9 @@ pnpm build
 # 构建产物包含 gzip 压缩文件
 ```
 
-### Nginx 配置
+### 部署说明
 
-```nginx
-server {
-    listen 80;
-    server_name admin.example.com;
-    
-    root /var/www/html;
-    index index.html;
-    
-    # 前端路由支持
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-    
-    # 代理 API 请求
-    location /api/ {
-        proxy_pass http://backend:8080/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-```
+构建完成后，将 `dist/` 目录下的文件部署到任意静态文件服务器即可。
 
 ### Docker 部署
 
@@ -421,13 +415,13 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ### 基于的开源项目
 
-| 项目 | 说明 | 地址 |
-|------|------|------|
-| **vue-pure-admin** | 开源后台管理系统模板 | https://github.com/pure-admin/vue-pure-admin |
-| **Vue 3** | 渐进式 JavaScript 框架 | https://github.com/vuejs/core |
-| **Element Plus** | Vue 3 组件库 | https://github.com/element-plus/element-plus |
-| **Vite** | 下一代前端构建工具 | https://github.com/vitejs/vite |
-| **Remix Icon** | 开源图标库 | https://github.com/Remix-Design/RemixIcon |
+| 项目               | 说明                   | 地址                                         |
+| ------------------ | ---------------------- | -------------------------------------------- |
+| **vue-pure-admin** | 开源后台管理系统模板   | https://github.com/pure-admin/vue-pure-admin |
+| **Vue 3**          | 渐进式 JavaScript 框架 | https://github.com/vuejs/core                |
+| **Element Plus**   | Vue 3 组件库           | https://github.com/element-plus/element-plus |
+| **Vite**           | 下一代前端构建工具     | https://github.com/vitejs/vite               |
+| **Remix Icon**     | 开源图标库             | https://github.com/Remix-Design/RemixIcon    |
 
 ### 特别感谢
 
@@ -439,12 +433,13 @@ MIT License
 
 ## 🔗 相关仓库
 
-| 平台 | 地址 |
-|------|------|
+| 平台       | 地址                                       |
+| ---------- | ------------------------------------------ |
 | **GitHub** | https://github.com/Liukers/go-vue-admin-ui |
-| **Gitee** | https://gitee.com/liukers/go-vue-admin-ui |
+| **Gitee**  | https://gitee.com/liukers/go-vue-admin-ui  |
 
 **配套后端**：
+
 - GitHub: https://github.com/Liukers/go-vue-admin-api
 - Gitee: https://gitee.com/liukers/go-vue-admin-api
 

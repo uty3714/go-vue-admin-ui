@@ -121,19 +121,35 @@ class PureHttp {
     instance.interceptors.response.use(
       (response: PureHttpResponse) => {
         const $config = response.config;
-        
+
+        // 检查是否收到刷新后的token
+        const refreshedToken = response.headers["x-refresh-token"];
+        if (refreshedToken) {
+          // 更新本地token
+          const data = getToken();
+          if (data) {
+            data.accessToken = refreshedToken;
+            // 重新计算过期时间
+            const expires = new Date().getTime() + 60 * 60 * 1000; // 默认1小时
+            data.expires = expires.toString();
+            useUserStoreHook().SET_TOKEN(data);
+          }
+        }
+
         // 处理业务错误码（token过期、无效、缺失）
         const data = response.data;
         if (data && typeof data.code === "number") {
           // 2000: token过期, 2002: token无效, 2003: token缺失
           if (data.code === 2000 || data.code === 2002 || data.code === 2003) {
-            message(data.message || "登录已过期，请重新登录", { type: "warning" });
+            message(data.message || "登录已过期，请重新登录", {
+              type: "warning"
+            });
             // 调用登出方法，清除token并跳转到登录页
             useUserStoreHook().logOut();
             return Promise.reject(new Error(data.message || "登录已过期"));
           }
         }
-        
+
         // 优先判断post/get等方法是否传入回调，否则执行初始化设置等回调
         if (typeof $config.beforeResponseCallback === "function") {
           $config.beforeResponseCallback(response);
@@ -148,7 +164,7 @@ class PureHttp {
       (error: PureHttpError) => {
         const $error = error;
         $error.isCancelRequest = Axios.isCancel($error);
-        
+
         // 处理服务器错误
         const { response } = error;
         if (response) {
@@ -166,7 +182,7 @@ class PureHttp {
         } else if (!window.navigator.onLine) {
           message("网络连接已断开，请检查网络", { type: "error" });
         }
-        
+
         return Promise.reject($error);
       }
     );

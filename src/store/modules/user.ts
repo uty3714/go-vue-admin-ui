@@ -7,7 +7,12 @@ import {
   routerArrays,
   storageLocal
 } from "../utils";
-import { type Result, type LoginResult, login } from "@/api/system";
+import {
+  type Result,
+  type LoginResult,
+  login,
+  refreshToken
+} from "@/api/system";
 import { useMultiTagsStoreHook } from "./multiTags";
 import {
   type DataInfo,
@@ -65,12 +70,16 @@ export const useUserStore = defineStore("pure-user", {
       this.loginDay = Number(value);
     },
     /** 登入 */
-    async loginByUsername(data) {
+    async loginByUsername(data: { username: string; password: string }) {
       return new Promise<Result<LoginResult>>((resolve, reject) => {
         login(data)
           .then(res => {
             if (res.code === 200) {
               // 转换后端返回格式到前端存储格式
+              // 从后端返回的perms字段获取权限（如果有），否则根据角色设置默认权限
+              const userPerms = res.data.userInfo.perms || [];
+              const permissions = userPerms.length > 0 ? userPerms : ["*:*:*"];
+
               const tokenData = {
                 accessToken: res.data.token,
                 expires: new Date(res.data.expiresAt * 1000), // 转换为Date对象
@@ -79,12 +88,16 @@ export const useUserStore = defineStore("pure-user", {
                 username: res.data.userInfo.username,
                 nickname:
                   res.data.userInfo.nickname || res.data.userInfo.username,
-                roles: res.data.userInfo.role
-                  ? [res.data.userInfo.role.roleCode]
+                roles: res.data.userInfo.roles
+                  ? res.data.userInfo.roles
                   : ["admin"],
-                permissions: ["*:*:*"] // 默认拥有所有权限
+                permissions: permissions
               };
               setToken(tokenData as any);
+
+              // 更新store中的权限信息
+              this.SET_PERMS(permissions);
+              this.SET_ROLES(tokenData.roles);
             }
             resolve(res);
           })
@@ -103,23 +116,54 @@ export const useUserStore = defineStore("pure-user", {
       resetRouter();
       router.push("/login");
     },
-    /** 刷新`token`（后端暂未实现，直接返回） */
-    async handRefreshToken(_data) {
-      return new Promise<any>((resolve, reject) => {
-        // 后端暂未实现刷新token，直接返回原token
-        const tokenData = getToken();
-        if (tokenData) {
-          resolve({
-            code: 200,
-            data: {
-              accessToken: tokenData.accessToken,
-              refreshToken: tokenData.refreshToken,
-              expires: tokenData.expires
+    /** 刷新`token` */
+    async handRefreshToken(data: {
+      accessToken: string;
+      refreshToken: string;
+      expires: Date;
+    }) {
+      return new Promise<any>((resolve, _reject) => {
+        // 调用后端刷新token接口
+        refreshToken()
+          .then(res => {
+            if (res.code === 200 && res.data) {
+              // 更新token信息
+              const tokenData = {
+                ...getToken(),
+                accessToken: res.data.token || data.accessToken,
+                refreshToken: res.data.token || data.refreshToken,
+                expires: res.data.expiresAt
+                  ? new Date(res.data.expiresAt * 1000)
+                  : data.expires
+              };
+              setToken(tokenData as any);
+              resolve({
+                code: 200,
+                data: tokenData
+              });
+            } else {
+              // 如果后端未实现或返回错误，保持原token
+              resolve({
+                code: 200,
+                data: {
+                  accessToken: data.accessToken,
+                  refreshToken: data.refreshToken,
+                  expires: data.expires
+                }
+              });
             }
+          })
+          .catch(() => {
+            // 后端未实现刷新接口，保持原token
+            resolve({
+              code: 200,
+              data: {
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken,
+                expires: data.expires
+              }
+            });
           });
-        } else {
-          reject(new Error("No token found"));
-        }
       });
     }
   }

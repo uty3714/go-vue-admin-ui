@@ -118,7 +118,7 @@
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
+          :page-sizes="[20, 50, 100]"
           :total="total"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
@@ -202,7 +202,7 @@ import {
   createUser,
   updateUser,
   deleteUser,
-  getRoleList,
+  getRoleOptions,
   type UserInfo,
   type RoleInfo
 } from "@/api/system";
@@ -224,7 +224,7 @@ const loading = ref(false);
 const dataList = ref<UserInfo[]>([]);
 const total = ref(0);
 const currentPage = ref(1);
-const pageSize = ref(10);
+const pageSize = ref(20);
 const keyword = ref("");
 const status = ref<number | null>(null);
 
@@ -247,9 +247,19 @@ const roleList = ref<RoleInfo[]>([]);
 const rules: FormRules = {
   username: [{ required: true, message: "请输入用户名", trigger: "blur" }],
   password: [
-    { required: true, message: "请输入密码", trigger: "blur" },
     {
+      required: true,
+      message: "请输入密码",
+      trigger: "blur",
       validator: (rule, value, callback) => {
+        if (formData.id && (!value || value === "")) {
+          callback();
+          return;
+        }
+        if (!formData.id && (!value || value === "")) {
+          callback(new Error("请输入密码"));
+          return;
+        }
         if (value && !REGEXP_PWD.test(value)) {
           callback(
             new Error("密码格式应为8-18位数字、字母、符号的任意两种组合")
@@ -257,8 +267,7 @@ const rules: FormRules = {
         } else {
           callback();
         }
-      },
-      trigger: "blur"
+      }
     }
   ],
   roleId: [{ required: true, message: "请选择角色", trigger: "change" }]
@@ -295,9 +304,9 @@ const fetchData = async () => {
 };
 
 const fetchRoleList = async () => {
-  const res = await getRoleList({ page: 1, pageSize: 100 });
+  const res = await getRoleOptions();
   if (res.code === 200) {
-    roleList.value = res.data.list;
+    roleList.value = res.data;
   }
 };
 
@@ -310,7 +319,7 @@ const handleAdd = () => {
 const handleEdit = (row: UserInfo) => {
   dialogTitle.value = "编辑用户";
   Object.assign(formData, row);
-  formData.password = ""; // 编辑时密码为空
+  formData.password = "";
   dialogVisible.value = true;
 };
 
@@ -360,7 +369,6 @@ const handleSubmit = async () => {
   await formRef.value.validate(async valid => {
     if (valid) {
       if (formData.id) {
-        // 编辑 - 不包含密码字段
         const data = { ...formData };
         delete data.password;
         const res = await updateUser(data);
@@ -372,7 +380,6 @@ const handleSubmit = async () => {
           message(res.message, { type: "error" });
         }
       } else {
-        // 新增
         const res = await createUser(formData as any);
         if (res.code === 200) {
           message("添加成功", { type: "success" });
@@ -428,14 +435,14 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .search-form {
-  margin-bottom: 20px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  margin-bottom: 20px;
 
   .add-button-item {
-    margin-left: auto;
     margin-right: 0;
+    margin-left: auto;
   }
 }
 
