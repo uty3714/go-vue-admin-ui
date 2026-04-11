@@ -20,6 +20,9 @@ const {
   pureApp,
   username,
   userAvatar,
+  userAvatarText,
+  userAvatarBgColor,
+  showAvatarImage,
   avatarsStyle,
   toggleSideBar
 } = useNav();
@@ -57,7 +60,16 @@ const goToProfile = () => {
       <!-- 退出登录 -->
       <el-dropdown trigger="click">
         <span class="el-dropdown-link navbar-bg-hover select-none">
-          <img :src="userAvatar" :style="avatarsStyle" />
+          <!-- 有头像图片时显示图片 -->
+          <img v-if="showAvatarImage" :src="userAvatar" :style="avatarsStyle" />
+          <!-- 没有头像图片时显示文字头像 -->
+          <div
+            v-else
+            class="user-avatar-text"
+            :style="{ backgroundColor: userAvatarBgColor }"
+          >
+            {{ userAvatarText }}
+          </div>
           <p v-if="username" class="dark:text-white">{{ username }}</p>
         </span>
         <template #dropdown>
@@ -124,6 +136,19 @@ const goToProfile = () => {
       img {
         width: 22px;
         height: 22px;
+        border-radius: 50%;
+      }
+
+      .user-avatar-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        margin-right: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #fff;
         border-radius: 50%;
       }
     }

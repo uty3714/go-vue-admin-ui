@@ -10,7 +10,7 @@ export default {
   children: [
     {
       path: "/error/403",
-      name: "403",
+      name: "Error403",
       component: () => import("@/views/error/403.vue"),
       meta: {
         title: "403"
@@ -18,7 +18,7 @@ export default {
     },
     {
       path: "/error/404",
-      name: "404",
+      name: "Error404",
       component: () => import("@/views/error/404.vue"),
       meta: {
         title: "404"
@@ -26,7 +26,7 @@ export default {
     },
     {
       path: "/error/500",
-      name: "500",
+      name: "Error500",
       component: () => import("@/views/error/500.vue"),
       meta: {
         title: "500"

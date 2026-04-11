@@ -4,22 +4,20 @@
       <template #header>
         <div class="card-header">
           <span class="font-medium">菜单管理</span>
+          <div class="operation-area">
+            <el-button
+              type="primary"
+              :icon="useRenderIcon(AddFill)"
+              @click="handleAdd()"
+            >
+              新增菜单
+            </el-button>
+            <el-button :icon="useRenderIcon(Refresh)" @click="handleRefresh">
+              刷新
+            </el-button>
+          </div>
         </div>
       </template>
-
-      <!-- 操作按钮 -->
-      <div class="operation-bar">
-        <el-button
-          type="primary"
-          :icon="useRenderIcon(AddFill)"
-          @click="handleAdd()"
-        >
-          新增菜单
-        </el-button>
-        <el-button :icon="useRenderIcon(Refresh)" @click="handleRefresh">
-          刷新
-        </el-button>
-      </div>
 
       <!-- 表格 -->
       <el-table
@@ -423,7 +421,17 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-.operation-bar {
-  margin-bottom: 20px;
+.card-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.operation-area {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 </style>

@@ -30,8 +30,8 @@ const router = useRouter();
 
 const HISTORY_TYPE = "history";
 const COLLECT_TYPE = "collect";
-const LOCALEHISTORYKEY = "menu-search-history";
-const LOCALECOLLECTKEY = "menu-search-collect";
+const LOCALE_HISTORY_KEY = "menu-search-history";
+const LOCALE_COLLECT_KEY = "menu-search-collect";
 
 const keyword = ref("");
 const resultRef = ref();
@@ -191,7 +191,8 @@ function handleEnter() {
 
 /** 删除历史记录 */
 function handleDelete(item) {
-  const key = item.type === HISTORY_TYPE ? LOCALEHISTORYKEY : LOCALECOLLECTKEY;
+  const key =
+    item.type === HISTORY_TYPE ? LOCALE_HISTORY_KEY : LOCALE_COLLECT_KEY;
   let list = getStorageItem(key);
   list = list.filter(listItem => listItem.path !== item.path);
   setStorageItem(key, list);
@@ -200,15 +201,15 @@ function handleDelete(item) {
 
 /** 收藏历史记录 */
 function handleCollect(item) {
-  let searchHistoryList = getStorageItem(LOCALEHISTORYKEY);
-  let searchCollectList = getStorageItem(LOCALECOLLECTKEY);
+  let searchHistoryList = getStorageItem(LOCALE_HISTORY_KEY);
+  let searchCollectList = getStorageItem(LOCALE_COLLECT_KEY);
   searchHistoryList = searchHistoryList.filter(
     historyItem => historyItem.path !== item.path
   );
-  setStorageItem(LOCALEHISTORYKEY, searchHistoryList);
+  setStorageItem(LOCALE_HISTORY_KEY, searchHistoryList);
   if (!searchCollectList.some(collectItem => collectItem.path === item.path)) {
     searchCollectList.unshift({ ...item, type: COLLECT_TYPE });
-    setStorageItem(LOCALECOLLECTKEY, searchCollectList);
+    setStorageItem(LOCALE_COLLECT_KEY, searchCollectList);
   }
   getHistory();
 }
@@ -218,48 +219,48 @@ function saveHistory() {
   const { path, meta } = resultOptions.value.find(
     item => item.path === activePath.value
   );
-  const searchHistoryList = getStorageItem(LOCALEHISTORYKEY);
-  const searchCollectList = getStorageItem(LOCALECOLLECTKEY);
+  const searchHistoryList = getStorageItem(LOCALE_HISTORY_KEY);
+  const searchCollectList = getStorageItem(LOCALE_COLLECT_KEY);
   const isCollected = searchCollectList.some(item => item.path === path);
   const existingIndex = searchHistoryList.findIndex(item => item.path === path);
   if (!isCollected) {
     if (existingIndex !== -1) searchHistoryList.splice(existingIndex, 1);
     if (searchHistoryList.length >= historyNum) searchHistoryList.pop();
     searchHistoryList.unshift({ path, meta, type: HISTORY_TYPE });
-    storageLocal().setItem(LOCALEHISTORYKEY, searchHistoryList);
+    storageLocal().setItem(LOCALE_HISTORY_KEY, searchHistoryList);
   }
 }
 
 /** 更新存储的搜索记录 */
 function updateHistory() {
-  let searchHistoryList = getStorageItem(LOCALEHISTORYKEY);
+  let searchHistoryList = getStorageItem(LOCALE_HISTORY_KEY);
   const historyIndex = searchHistoryList.findIndex(
     item => item.path === historyPath.value
   );
   if (historyIndex !== -1) {
     const [historyItem] = searchHistoryList.splice(historyIndex, 1);
     searchHistoryList.unshift(historyItem);
-    setStorageItem(LOCALEHISTORYKEY, searchHistoryList);
+    setStorageItem(LOCALE_HISTORY_KEY, searchHistoryList);
   }
 }
 
 /** 获取本地历史记录 */
 function getHistory() {
-  const searchHistoryList = getStorageItem(LOCALEHISTORYKEY);
-  const searchCollectList = getStorageItem(LOCALECOLLECTKEY);
+  const searchHistoryList = getStorageItem(LOCALE_HISTORY_KEY);
+  const searchCollectList = getStorageItem(LOCALE_COLLECT_KEY);
   historyOptions.value = [...searchHistoryList, ...searchCollectList];
   historyPath.value = historyOptions.value[0]?.path;
 }
 
 /** 拖拽改变收藏顺序 */
 function handleDrag(item: dragItem) {
-  const searchCollectList = getStorageItem(LOCALECOLLECTKEY);
+  const searchCollectList = getStorageItem(LOCALE_COLLECT_KEY);
   const [reorderedItem] = searchCollectList.splice(item.oldIndex, 1);
   searchCollectList.splice(item.newIndex, 0, reorderedItem);
-  storageLocal().setItem(LOCALECOLLECTKEY, searchCollectList);
+  storageLocal().setItem(LOCALE_COLLECT_KEY, searchCollectList);
   historyOptions.value = [
-    ...getStorageItem(LOCALEHISTORYKEY),
-    ...getStorageItem(LOCALECOLLECTKEY)
+    ...getStorageItem(LOCALE_HISTORY_KEY),
+    ...getStorageItem(LOCALE_COLLECT_KEY)
   ];
   historyPath.value = reorderedItem.path;
 }

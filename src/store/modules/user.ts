@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import {
-  type userType,
+  type UserType,
   store,
   router,
   resetRouter,
@@ -18,23 +18,25 @@ import {
   type DataInfo,
   setToken,
   removeToken,
-  userKey,
+  USER_KEY,
   getToken
 } from "@/utils/auth";
 
 export const useUserStore = defineStore("pure-user", {
-  state: (): userType => ({
+  state: (): UserType => ({
     // 头像
-    avatar: storageLocal().getItem<DataInfo<number>>(userKey)?.avatar ?? "",
+    avatar: storageLocal().getItem<DataInfo<number>>(USER_KEY)?.avatar ?? "",
     // 用户名
-    username: storageLocal().getItem<DataInfo<number>>(userKey)?.username ?? "",
+    username:
+      storageLocal().getItem<DataInfo<number>>(USER_KEY)?.username ?? "",
     // 昵称
-    nickname: storageLocal().getItem<DataInfo<number>>(userKey)?.nickname ?? "",
+    nickname:
+      storageLocal().getItem<DataInfo<number>>(USER_KEY)?.nickname ?? "",
     // 页面级别权限
-    roles: storageLocal().getItem<DataInfo<number>>(userKey)?.roles ?? [],
+    roles: storageLocal().getItem<DataInfo<number>>(USER_KEY)?.roles ?? [],
     // 按钮级别权限
     permissions:
-      storageLocal().getItem<DataInfo<number>>(userKey)?.permissions ?? [],
+      storageLocal().getItem<DataInfo<number>>(USER_KEY)?.permissions ?? [],
     // 是否勾选了登录页的免登录
     isRemembered: false,
     // 登录页的免登录存储几天，默认7天

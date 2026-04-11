@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import {
-  type cacheType,
+  type CacheType,
   store,
   ascending,
   getKeyList,
@@ -46,7 +46,7 @@ export const usePermissionStore = defineStore("pure-permission", {
         cacheLength--;
       }
     },
-    cacheOperate({ mode, name }: cacheType) {
+    cacheOperate({ mode, name }: CacheType) {
       const delIndex = this.cachePageList.findIndex(v => v === name);
       switch (mode) {
         case "refresh":

@@ -2,12 +2,12 @@ import type { VNode } from "vue";
 import { isFunction } from "@pureadmin/utils";
 import { type MessageHandler, ElMessage } from "element-plus";
 
-type messageStyle = "el" | "antd";
-type messageTypes = "info" | "success" | "warning" | "error";
+type MessageStyle = "el" | "antd";
+type MessageTypes = "info" | "success" | "warning" | "error";
 
 interface MessageParams {
   /** 消息类型，可选 `info` 、`success` 、`warning` 、`error` ，默认 `info` */
-  type?: messageTypes;
+  type?: MessageTypes;
   /** 是否纯色，默认 `false` */
   plain?: boolean;
   /** 自定义图标，该属性会覆盖 `type` 的图标 */
@@ -15,7 +15,7 @@ interface MessageParams {
   /** 是否将 `message` 属性作为 `HTML` 片段处理，默认 `false` */
   dangerouslyUseHTMLString?: boolean;
   /** 消息风格，可选 `el` 、`antd` ，默认 `antd` */
-  customClass?: messageStyle;
+  customClass?: MessageStyle;
   /** 显示时间，单位为毫秒。设为 `0` 则不会自动关闭，`element-plus` 默认是 `3000` ，平台改成默认 `2000` */
   duration?: number;
   /** 是否显示关闭按钮，默认值 `false` */

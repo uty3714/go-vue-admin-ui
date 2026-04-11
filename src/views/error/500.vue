@@ -3,7 +3,7 @@ import { useRouter } from "vue-router";
 import noServer from "@/assets/status/500.svg?component";
 
 defineOptions({
-  name: "500"
+  name: "Error500"
 });
 
 const router = useRouter();

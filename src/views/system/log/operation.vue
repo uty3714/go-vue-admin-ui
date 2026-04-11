@@ -9,9 +9,8 @@ import {
 } from "@/api/system";
 import { ElMessageBox } from "element-plus";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
-import SearchIcon from "~icons/ri/search-line";
-import DeleteIcon from "~icons/ri/delete-bin-line";
-import RefreshIcon from "~icons/ri/refresh-line";
+import Eye from "~icons/ri/eye-line";
+import Delete from "~icons/ep/delete";
 
 defineOptions({
   name: "OperationLog"
@@ -40,7 +39,7 @@ const columns = [
   { label: "IP地址", prop: "ip", width: 130 },
   { label: "耗时(ms)", prop: "operationTime", width: 100 },
   { label: "操作时间", prop: "createdAt", minWidth: 160 },
-  { label: "操作", fixed: "right", width: 120, slot: "operation" }
+  { label: "操作", fixed: "right", width: 160, slot: "operation" }
 ];
 
 const fetchData = async () => {
@@ -129,17 +128,27 @@ const handleViewDetail = (row: OperationLogInfo) => {
   detailVisible.value = true;
 };
 
-// 递归解析嵌套的 JSON 字符串
+// 递归解析嵌套的 JSON 字符串（处理双重转义）
 const deepParseJson = (value: any): any => {
   if (typeof value === "string") {
+    // 先处理双重转义的字符串（如 \" 转换为 ", \/ 转换为 /）
+    let unescaped = value;
+    // 处理 Unicode 转义（如 \u0026 转换为 &）
+    unescaped = unescaped.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16))
+    );
+
     // 尝试解析为 JSON
     try {
-      const parsed = JSON.parse(value);
-      // 如果解析成功，递归处理
-      return deepParseJson(parsed);
+      const parsed = JSON.parse(unescaped);
+      // 如果解析成功且结果不同，递归处理
+      if (parsed !== unescaped) {
+        return deepParseJson(parsed);
+      }
+      return unescaped;
     } catch {
-      // 不是有效的 JSON，返回原值
-      return value;
+      // 不是有效的 JSON，返回解转义后的值
+      return unescaped;
     }
   } else if (Array.isArray(value)) {
     return value.map(item => deepParseJson(item));
@@ -158,13 +167,26 @@ const formatJson = (data: string | undefined): string => {
   if (!data || data === "-" || data === "[日志列表数据省略]")
     return data || "-";
   try {
-    // 先解析外层
-    let parsed = JSON.parse(data);
+    // 先处理原始字符串中的转义（如 \" 转换为 "）
+    let processed = data;
+    // 如果是已经被 JSON.stringify 过的字符串（如从 Go 后端返回）
+    // 需要先处理双重转义
+    if (data.startsWith('"') && data.endsWith('"')) {
+      try {
+        processed = JSON.parse(data);
+      } catch {
+        // 解析失败，保持原样
+      }
+    }
+
+    // 解析为 JSON 对象
+    let parsed = JSON.parse(processed);
     // 递归解析嵌套的 JSON 字符串
     parsed = deepParseJson(parsed);
-    // 格式化输出
+    // 格式化输出（保留 2 空格缩进）
     return JSON.stringify(parsed, null, 2);
   } catch {
+    // 解析失败，返回原始数据
     return data;
   }
 };
@@ -213,94 +235,98 @@ onMounted(() => {
       <template #header>
         <div class="card-header">
           <span class="font-medium">操作日志</span>
+          <div class="search-area">
+            <el-form :inline="true" :model="searchForm" class="search-form">
+              <el-form-item label="用户名">
+                <el-input
+                  v-model="searchForm.username"
+                  placeholder="请输入用户名"
+                  clearable
+                  style="width: 140px"
+                />
+              </el-form-item>
+              <el-form-item label="状态">
+                <el-select
+                  v-model="searchForm.status"
+                  placeholder="请选择状态"
+                  clearable
+                  style="width: 110px"
+                >
+                  <el-option label="成功" :value="1" />
+                  <el-option label="失败" :value="2" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="开始时间">
+                <el-date-picker
+                  v-model="searchForm.startTime"
+                  type="date"
+                  placeholder="选择开始时间"
+                  value-format="YYYY-MM-DD"
+                  style="width: 135px"
+                />
+              </el-form-item>
+              <el-form-item label="结束时间">
+                <el-date-picker
+                  v-model="searchForm.endTime"
+                  type="date"
+                  placeholder="选择结束时间"
+                  value-format="YYYY-MM-DD"
+                  style="width: 135px"
+                />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="handleSearch">搜索</el-button>
+                <el-button @click="handleReset">重置</el-button>
+              </el-form-item>
+            </el-form>
+            <el-button type="danger" @click="handleClear">清空日志</el-button>
+          </div>
         </div>
       </template>
 
-      <!-- 搜索区域 -->
-      <div class="search-container">
-        <el-form :inline="true" :model="searchForm" class="search-form">
-          <el-form-item label="用户名">
-            <el-input
-              v-model="searchForm.username"
-              placeholder="请输入用户名"
-              clearable
-              style="width: 150px"
-            />
-          </el-form-item>
-          <el-form-item label="状态">
-            <el-select
-              v-model="searchForm.status"
-              placeholder="请选择状态"
-              clearable
-              style="width: 120px"
-            >
-              <el-option label="成功" :value="1" />
-              <el-option label="失败" :value="2" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="开始时间">
-            <el-date-picker
-              v-model="searchForm.startTime"
-              type="date"
-              placeholder="选择开始时间"
-              value-format="YYYY-MM-DD"
-              style="width: 150px"
-            />
-          </el-form-item>
-          <el-form-item label="结束时间">
-            <el-date-picker
-              v-model="searchForm.endTime"
-              type="date"
-              placeholder="选择结束时间"
-              value-format="YYYY-MM-DD"
-              style="width: 150px"
-            />
-          </el-form-item>
-          <el-form-item>
-            <el-button
-              type="primary"
-              :icon="useRenderIcon(SearchIcon)"
-              @click="handleSearch"
-            >
-              搜索
-            </el-button>
-            <el-button :icon="useRenderIcon(RefreshIcon)" @click="handleReset"
-              >重置</el-button
-            >
-          </el-form-item>
-        </el-form>
-
-        <!-- 清空日志按钮 -->
-        <el-button
-          type="danger"
-          :icon="useRenderIcon(DeleteIcon)"
-          @click="handleClear"
-        >
-          清空日志
-        </el-button>
-      </div>
-
       <!-- 数据表格 -->
-      <pure-table
-        :data="dataList"
-        :columns="columns"
-        :loading="loading"
-        row-key="id"
-      >
-        <template #status="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-            {{ row.status === 1 ? "成功" : "失败" }}
-          </el-tag>
-        </template>
-        <template #operation="{ row }">
-          <el-button link type="primary" @click="handleViewDetail(row)"
-            >详情</el-button
-          >
-          <el-button link type="danger" @click="handleDelete(row)"
-            >删除</el-button
-          >
-        </template>
-      </pure-table>
+      <el-table v-loading="loading" :data="dataList" border stripe row-key="id">
+        <el-table-column
+          v-for="col in columns"
+          :key="col.prop"
+          :prop="col.prop"
+          :label="col.label"
+          :width="col.width"
+          :min-width="col.minWidth"
+          :fixed="col.fixed"
+        >
+          <template #default="{ row }">
+            <template v-if="col.slot === 'status'">
+              <el-tag :type="row.status === 1 ? 'success' : 'danger'">
+                {{ row.status === 1 ? "成功" : "失败" }}
+              </el-tag>
+            </template>
+            <template v-else-if="col.slot === 'operation'">
+              <div class="operation-buttons">
+                <el-button
+                  link
+                  type="primary"
+                  :icon="useRenderIcon(Eye)"
+                  @click="handleViewDetail(row)"
+                >
+                  详情
+                </el-button>
+                <el-button
+                  link
+                  type="danger"
+                  :icon="useRenderIcon(Delete)"
+                  @click="handleDelete(row)"
+                >
+                  删除
+                </el-button>
+              </div>
+            </template>
+            <template v-else>
+              {{ row[col.prop] || "-" }}
+            </template>
+          </template>
+        </el-table-column>
+      </el-table>
 
       <!-- 分页 -->
       <div class="pagination-container">
@@ -394,17 +420,35 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.search-container {
+.card-header {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+}
+
+.search-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
 }
 
 .search-form {
-  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.search-form :deep(.el-form-item) {
+  margin-right: 10px;
+  margin-bottom: 0;
+}
+
+.operation-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .pagination-container {
@@ -422,7 +466,7 @@ onMounted(() => {
 :deep(.log-detail-dialog .el-dialog__header) {
   padding: 16px 20px;
   margin: 0;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color);
 }
 
 :deep(.log-detail-dialog .el-dialog__title) {
@@ -445,7 +489,11 @@ onMounted(() => {
   width: 100px;
   min-width: 100px;
   font-weight: 500;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
+}
+
+:deep(.log-descriptions .el-descriptions__content) {
+  background-color: var(--el-bg-color);
 }
 
 .text-wrap {
@@ -492,9 +540,9 @@ onMounted(() => {
 .error-text {
   display: block;
   padding: 8px 12px;
-  color: #f56c6c;
+  color: var(--el-color-danger);
   word-break: break-all;
-  background: #fef0f0;
+  background: var(--el-color-danger-light-9);
   border-radius: 4px;
 }
 

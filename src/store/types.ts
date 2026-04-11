@@ -1,16 +1,16 @@
 import type { RouteRecordName } from "vue-router";
 
-export type cacheType = {
+export type CacheType = {
   mode: string;
   name?: RouteRecordName;
 };
 
-export type positionType = {
+export type PositionType = {
   startIndex?: number;
   length?: number;
 };
 
-export type appType = {
+export type AppType = {
   sidebar: {
     opened: boolean;
     withoutAnimation: boolean;
@@ -22,7 +22,7 @@ export type appType = {
   viewportSize: { width: number; height: number };
 };
 
-export type multiType = {
+export type MultiType = {
   path: string;
   name: string;
   meta: any;
@@ -30,13 +30,13 @@ export type multiType = {
   params?: object;
 };
 
-export type setType = {
+export type SetType = {
   title: string;
   fixedHeader: boolean;
   hiddenSideBar: boolean;
 };
 
-export type userType = {
+export type UserType = {
   avatar?: string;
   username?: string;
   nickname?: string;

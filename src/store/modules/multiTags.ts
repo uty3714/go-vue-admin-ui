@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import {
-  type multiType,
-  type positionType,
+  type MultiType,
+  type PositionType,
   store,
   isUrl,
   isEqual,
@@ -59,8 +59,8 @@ export const useMultiTagsStore = defineStore("pure-multiTags", {
     },
     handleTags<T>(
       mode: string,
-      value?: T | multiType,
-      position?: positionType
+      value?: T | MultiType,
+      position?: PositionType
     ): T {
       switch (mode) {
         case "equal":
@@ -69,7 +69,7 @@ export const useMultiTagsStore = defineStore("pure-multiTags", {
           break;
         case "push":
           {
-            const tagVal = value as multiType;
+            const tagVal = value as MultiType;
             // 不添加到标签页
             if (tagVal?.meta?.hiddenTag) return;
             // 如果是外链无需添加信息到标签页

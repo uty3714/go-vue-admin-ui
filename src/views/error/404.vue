@@ -3,7 +3,7 @@ import { useRouter } from "vue-router";
 import noExist from "@/assets/status/404.svg?component";
 
 defineOptions({
-  name: "404"
+  name: "Error404"
 });
 
 const router = useRouter();

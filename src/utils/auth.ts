@@ -21,8 +21,8 @@ export interface DataInfo<T> {
   permissions?: Array<string>;
 }
 
-export const userKey = "user-info";
-export const TokenKey = "authorized-token";
+export const USER_KEY = "user-info";
+export const TOKEN_KEY = "authorized-token";
 /**
  * 通过`multiple-tabs`是否在`cookie`中，判断用户是否已经登录系统，
  * 从而支持多标签页打开已经登录的系统后无需再登录。
@@ -33,10 +33,10 @@ export const multipleTabsKey = "multiple-tabs";
 
 /** 获取`token` */
 export function getToken(): DataInfo<number> {
-  // 此处与`TokenKey`相同，此写法解决初始化时`Cookies`中不存在`TokenKey`报错
-  return Cookies.get(TokenKey)
-    ? JSON.parse(Cookies.get(TokenKey))
-    : storageLocal().getItem(userKey);
+  // 此处与`TOKEN_KEY`相同，此写法解决初始化时`Cookies`中不存在`TOKEN_KEY`报错
+  return Cookies.get(TOKEN_KEY)
+    ? JSON.parse(Cookies.get(TOKEN_KEY))
+    : storageLocal().getItem(USER_KEY);
 }
 
 /**
@@ -53,10 +53,10 @@ export function setToken(data: DataInfo<Date>) {
   const cookieString = JSON.stringify({ accessToken, expires, refreshToken });
 
   expires > 0
-    ? Cookies.set(TokenKey, cookieString, {
+    ? Cookies.set(TOKEN_KEY, cookieString, {
         expires: (expires - Date.now()) / 86400000
       })
-    : Cookies.set(TokenKey, cookieString);
+    : Cookies.set(TOKEN_KEY, cookieString);
 
   Cookies.set(
     multipleTabsKey,
@@ -74,7 +74,7 @@ export function setToken(data: DataInfo<Date>) {
     useUserStoreHook().SET_NICKNAME(nickname);
     useUserStoreHook().SET_ROLES(roles);
     useUserStoreHook().SET_PERMS(permissions);
-    storageLocal().setItem(userKey, {
+    storageLocal().setItem(USER_KEY, {
       refreshToken,
       expires,
       avatar,
@@ -96,15 +96,15 @@ export function setToken(data: DataInfo<Date>) {
     });
   } else {
     const avatar =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.avatar ?? "";
+      storageLocal().getItem<DataInfo<number>>(USER_KEY)?.avatar ?? "";
     const username =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.username ?? "";
+      storageLocal().getItem<DataInfo<number>>(USER_KEY)?.username ?? "";
     const nickname =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.nickname ?? "";
+      storageLocal().getItem<DataInfo<number>>(USER_KEY)?.nickname ?? "";
     const roles =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.roles ?? [];
+      storageLocal().getItem<DataInfo<number>>(USER_KEY)?.roles ?? [];
     const permissions =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.permissions ?? [];
+      storageLocal().getItem<DataInfo<number>>(USER_KEY)?.permissions ?? [];
     setUserKey({
       avatar,
       username,
@@ -117,9 +117,9 @@ export function setToken(data: DataInfo<Date>) {
 
 /** 删除`token`以及key值为`user-info`的localStorage信息 */
 export function removeToken() {
-  Cookies.remove(TokenKey);
+  Cookies.remove(TOKEN_KEY);
   Cookies.remove(multipleTabsKey);
-  storageLocal().removeItem(userKey);
+  storageLocal().removeItem(USER_KEY);
 }
 
 /** 格式化token（jwt格式） */

@@ -4,42 +4,40 @@
       <template #header>
         <div class="card-header">
           <span class="font-medium">角色管理</span>
+          <div class="search-area">
+            <el-form :inline="true" class="search-form">
+              <el-form-item label="关键词">
+                <el-input
+                  v-model="keyword"
+                  placeholder="角色名称/角色代码"
+                  clearable
+                  style="width: 180px"
+                  @keyup.enter="handleSearch"
+                />
+              </el-form-item>
+              <el-form-item>
+                <el-button
+                  type="primary"
+                  :icon="useRenderIcon(Search)"
+                  @click="handleSearch"
+                >
+                  搜索
+                </el-button>
+                <el-button :icon="useRenderIcon(Refresh)" @click="handleReset">
+                  重置
+                </el-button>
+              </el-form-item>
+            </el-form>
+            <el-button
+              type="primary"
+              :icon="useRenderIcon(AddFill)"
+              @click="handleAdd"
+            >
+              新增角色
+            </el-button>
+          </div>
         </div>
       </template>
-
-      <!-- 搜索区域 -->
-      <el-form :inline="true" class="search-form">
-        <el-form-item label="关键词">
-          <el-input
-            v-model="keyword"
-            placeholder="角色名称/角色代码"
-            clearable
-            style="width: 200px"
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button
-            type="primary"
-            :icon="useRenderIcon(Search)"
-            @click="handleSearch"
-          >
-            搜索
-          </el-button>
-          <el-button :icon="useRenderIcon(Refresh)" @click="handleReset">
-            重置
-          </el-button>
-        </el-form-item>
-        <el-form-item class="add-button-item">
-          <el-button
-            type="primary"
-            :icon="useRenderIcon(AddFill)"
-            @click="handleAdd"
-          >
-            新增角色
-          </el-button>
-        </el-form-item>
-      </el-form>
 
       <!-- 表格 -->
       <el-table
@@ -426,16 +424,29 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+.card-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.search-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
 .search-form {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  margin-bottom: 20px;
+}
 
-  .add-button-item {
-    margin-right: 0;
-    margin-left: auto;
-  }
+.search-form :deep(.el-form-item) {
+  margin-right: 10px;
+  margin-bottom: 0;
 }
 
 .pagination-container {

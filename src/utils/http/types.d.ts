@@ -5,7 +5,7 @@ import type {
   AxiosRequestConfig
 } from "axios";
 
-export type resultType = {
+export type ResultType = {
   accessToken?: string;
 };
 

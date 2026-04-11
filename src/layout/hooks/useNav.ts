@@ -34,11 +34,51 @@ export function useNav() {
     };
   });
 
-  /** 头像（如果头像为空则使用 src/assets/user.jpg ） */
+  /** 头像图片 URL（如果头像为空则使用文字头像） */
   const userAvatar = computed(() => {
     return isAllEmpty(useUserStoreHook()?.avatar)
       ? Avatar
       : useUserStoreHook()?.avatar;
+  });
+
+  /** 头像文本（显示昵称第一个字或用户名首字母大写） */
+  const userAvatarText = computed(() => {
+    const nickname = useUserStoreHook()?.nickname;
+    const username = useUserStoreHook()?.username;
+    const name = isAllEmpty(nickname) ? username : nickname;
+    if (!name || name === "") return "U";
+    const nameStr = String(name);
+    // 如果是中文，取第一个字
+    if (/[\u4e00-\u9fa5]/.test(nameStr)) {
+      return nameStr.charAt(0);
+    }
+    // 如果是英文，取首字母大写
+    return nameStr.charAt(0).toUpperCase();
+  });
+
+  /** 头像背景色（基于用户名生成固定颜色） */
+  const userAvatarBgColor = computed(() => {
+    const username = useUserStoreHook()?.username || "";
+    const colors = [
+      "#409EFF", // 蓝色
+      "#67C23A", // 绿色
+      "#E6A23C", // 橙色
+      "#F56C6C", // 红色
+      "#909399", // 灰色
+      "#9254DE", // 紫色
+      "#FF6D6D", // 粉红
+      "#36CFC9" // 青色
+    ];
+    let hash = 0;
+    for (let i = 0; i < username.length; i++) {
+      hash = username.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  });
+
+  /** 是否显示图片头像（用户上传了头像图片时显示） */
+  const showAvatarImage = computed(() => {
+    return !isAllEmpty(useUserStoreHook()?.avatar);
   });
 
   /** 昵称（如果昵称为空则显示用户名） */
@@ -148,6 +188,9 @@ export function useNav() {
     pureApp,
     username,
     userAvatar,
+    userAvatarText,
+    userAvatarBgColor,
+    showAvatarImage,
     avatarsStyle,
     tooltipEffect
   };

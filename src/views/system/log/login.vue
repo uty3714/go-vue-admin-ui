@@ -9,9 +9,7 @@ import {
 } from "@/api/system";
 import { ElMessageBox } from "element-plus";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
-import SearchIcon from "~icons/ri/search-line";
-import DeleteIcon from "~icons/ri/delete-bin-line";
-import RefreshIcon from "~icons/ri/refresh-line";
+import Delete from "~icons/ep/delete";
 
 defineOptions({
   name: "LoginLog"
@@ -40,7 +38,7 @@ const columns = [
   { label: "状态", prop: "status", width: 80, slot: "status" },
   { label: "消息", prop: "message", minWidth: 150 },
   { label: "登录时间", prop: "createdAt", minWidth: 160 },
-  { label: "操作", fixed: "right", width: 120, slot: "operation" }
+  { label: "操作", fixed: "right", width: 100, slot: "operation" }
 ];
 
 const fetchData = async () => {
@@ -132,91 +130,90 @@ onMounted(() => {
       <template #header>
         <div class="card-header">
           <span class="font-medium">登录日志</span>
+          <div class="search-area">
+            <el-form :inline="true" :model="searchForm" class="search-form">
+              <el-form-item label="用户名">
+                <el-input
+                  v-model="searchForm.username"
+                  placeholder="请输入用户名"
+                  clearable
+                  style="width: 140px"
+                />
+              </el-form-item>
+              <el-form-item label="状态">
+                <el-select
+                  v-model="searchForm.status"
+                  placeholder="请选择状态"
+                  clearable
+                  style="width: 110px"
+                >
+                  <el-option label="成功" :value="1" />
+                  <el-option label="失败" :value="2" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="开始时间">
+                <el-date-picker
+                  v-model="searchForm.startTime"
+                  type="date"
+                  placeholder="选择开始时间"
+                  value-format="YYYY-MM-DD"
+                  style="width: 135px"
+                />
+              </el-form-item>
+              <el-form-item label="结束时间">
+                <el-date-picker
+                  v-model="searchForm.endTime"
+                  type="date"
+                  placeholder="选择结束时间"
+                  value-format="YYYY-MM-DD"
+                  style="width: 135px"
+                />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="handleSearch">搜索</el-button>
+                <el-button @click="handleReset">重置</el-button>
+              </el-form-item>
+            </el-form>
+            <el-button type="danger" @click="handleClear">清空日志</el-button>
+          </div>
         </div>
       </template>
 
-      <!-- 搜索区域 -->
-      <div class="search-container">
-        <el-form :inline="true" :model="searchForm" class="search-form">
-          <el-form-item label="用户名">
-            <el-input
-              v-model="searchForm.username"
-              placeholder="请输入用户名"
-              clearable
-              style="width: 150px"
-            />
-          </el-form-item>
-          <el-form-item label="状态">
-            <el-select
-              v-model="searchForm.status"
-              placeholder="请选择状态"
-              clearable
-              style="width: 120px"
-            >
-              <el-option label="成功" :value="1" />
-              <el-option label="失败" :value="2" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="开始时间">
-            <el-date-picker
-              v-model="searchForm.startTime"
-              type="date"
-              placeholder="选择开始时间"
-              value-format="YYYY-MM-DD"
-              style="width: 150px"
-            />
-          </el-form-item>
-          <el-form-item label="结束时间">
-            <el-date-picker
-              v-model="searchForm.endTime"
-              type="date"
-              placeholder="选择结束时间"
-              value-format="YYYY-MM-DD"
-              style="width: 150px"
-            />
-          </el-form-item>
-          <el-form-item>
-            <el-button
-              type="primary"
-              :icon="useRenderIcon(SearchIcon)"
-              @click="handleSearch"
-            >
-              搜索
-            </el-button>
-            <el-button :icon="useRenderIcon(RefreshIcon)" @click="handleReset"
-              >重置</el-button
-            >
-          </el-form-item>
-        </el-form>
-
-        <!-- 清空日志按钮 -->
-        <el-button
-          type="danger"
-          :icon="useRenderIcon(DeleteIcon)"
-          @click="handleClear"
-        >
-          清空日志
-        </el-button>
-      </div>
-
       <!-- 数据表格 -->
-      <pure-table
-        :data="dataList"
-        :columns="columns"
-        :loading="loading"
-        row-key="id"
-      >
-        <template #status="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-            {{ row.status === 1 ? "成功" : "失败" }}
-          </el-tag>
-        </template>
-        <template #operation="{ row }">
-          <el-button link type="danger" @click="handleDelete(row)"
-            >删除</el-button
-          >
-        </template>
-      </pure-table>
+      <el-table v-loading="loading" :data="dataList" border stripe row-key="id">
+        <el-table-column
+          v-for="col in columns"
+          :key="col.prop"
+          :prop="col.prop"
+          :label="col.label"
+          :width="col.width"
+          :min-width="col.minWidth"
+          :fixed="col.fixed"
+        >
+          <template #default="{ row }">
+            <template v-if="col.slot === 'status'">
+              <el-tag :type="row.status === 1 ? 'success' : 'danger'">
+                {{ row.status === 1 ? "成功" : "失败" }}
+              </el-tag>
+            </template>
+            <template v-else-if="col.slot === 'operation'">
+              <div class="operation-buttons">
+                <el-button
+                  link
+                  type="danger"
+                  :icon="useRenderIcon(Delete)"
+                  @click="handleDelete(row)"
+                >
+                  删除
+                </el-button>
+              </div>
+            </template>
+            <template v-else>
+              {{ row[col.prop] || "-" }}
+            </template>
+          </template>
+        </el-table-column>
+      </el-table>
 
       <!-- 分页 -->
       <div class="pagination-container">
@@ -235,17 +232,35 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.search-container {
+.card-header {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+}
+
+.search-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
 }
 
 .search-form {
-  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.search-form :deep(.el-form-item) {
+  margin-right: 10px;
+  margin-bottom: 0;
+}
+
+.operation-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .pagination-container {

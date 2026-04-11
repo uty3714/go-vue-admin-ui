@@ -3,7 +3,7 @@ import { useRouter } from "vue-router";
 import noAccess from "@/assets/status/403.svg?component";
 
 defineOptions({
-  name: "403"
+  name: "Error403"
 });
 
 const router = useRouter();

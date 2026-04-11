@@ -44,7 +44,7 @@ export type tagsViewsType = {
   show: boolean;
 };
 
-export interface setType {
+export interface SetType {
   sidebar: {
     opened: boolean;
     withoutAnimation: boolean;

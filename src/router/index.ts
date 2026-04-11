@@ -31,7 +31,7 @@ import {
 } from "vue-router";
 import {
   type DataInfo,
-  userKey,
+  USER_KEY,
   removeToken,
   multipleTabsKey
 } from "@/utils/auth";
@@ -132,7 +132,7 @@ router.beforeEach((to: ToRouteType, _from, next) => {
       handleAliveRoute(to);
     }
   }
-  const userInfo = storageLocal().getItem<DataInfo<number>>(userKey);
+  const userInfo = storageLocal().getItem<DataInfo<number>>(USER_KEY);
   const externalLink = isUrl(to?.name as string);
   if (!externalLink) {
     to.matched.some(item => {
