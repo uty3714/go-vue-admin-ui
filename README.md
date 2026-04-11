@@ -1,5 +1,8 @@
 # Go-Vue-Admin UI
 
+icon: https://icon-sets.iconify.design/ri
+
+
 基于 Vue 3 + Element Plus 的轻量级 RBAC 后台管理前端
 
 ## 📋 项目介绍
