@@ -10,13 +10,6 @@
         <p class="welcome-subtitle">
           今天是 {{ currentDate }} {{ currentTime }}，祝您工作愉快！
         </p>
-        <div class="role-tag">
-          <span class="role-label">所属角色：</span>
-          <el-tag type="danger" effect="light" size="large">
-            <el-icon><component :is="useRenderIcon(Role)" /></el-icon>
-            {{ roleName }}
-          </el-tag>
-        </div>
       </div>
       <div class="welcome-decoration" />
     </div>
@@ -329,17 +322,6 @@ onMounted(() => {
 
 .welcome-subtitle {
   margin-bottom: 16px;
-  font-size: 14px;
-  opacity: 0.9;
-}
-
-.role-tag {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.role-label {
   font-size: 14px;
   opacity: 0.9;
 }
