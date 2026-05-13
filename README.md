@@ -21,6 +21,10 @@ icon: https://icon-sets.iconify.design/ri
 - ✅ 多标签页
 - ✅ 系统设置（日志开关控制）
 - ✅ 首页快捷链接
+- ✅ 登录验证码（支持刷新）
+- ✅ 统一错误码与错误边界处理
+- ✅ 共享表单校验规则
+- ✅ 全屏 Loading 管理
 
 ## 🏗️ 技术栈
 
@@ -28,7 +32,7 @@ icon: https://icon-sets.iconify.design/ri
 - **UI库**: Element Plus
 - **路由**: Vue Router
 - **状态管理**: Pinia
-- **构建工具**: Vite 5
+- **构建工具**: Vite 7
 - **HTTP**: Axios
 - **图标**: Remix Icon + Iconify
 - **样式**: Tailwind CSS
@@ -63,8 +67,11 @@ icon: https://icon-sets.iconify.design/ri
 │   │   │   └── ...
 │   ├── style/           # 全局样式
 │   ├── utils/           # 工具函数
-│   │   ├── http/        # HTTP 请求封装
-│   │   └── auth.ts      # 认证工具
+│   │   ├── http/        # HTTP 请求封装（含 Token 刷新与统一错误码处理）
+│   │   ├── auth.ts      # 认证工具
+│   │   ├── loading.ts   # 全屏 Loading（引用计数）
+│   │   ├── formRules.ts # 共享表单校验规则
+│   │   └── errorCode.ts # 前后端统一错误码枚举
 │   ├── views/           # 页面视图
 │   │   ├── system/      # 系统管理
 │   │   │   ├── user/    # 用户管理
